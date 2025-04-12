@@ -6,7 +6,7 @@ module omneon::lending {
     use iota::iota::IOTA; 
     use iota::tx_context::{Self};
     use iota::object::{Self, ID, UID};
-    use iota::transfer::{public_transfer,share_object};
+    use iota::transfer::{Self};
     use iota::bag::{Self, Bag};
     use iota::balance::{Self, Supply, Balance};
     use iota::event::emit;
@@ -73,6 +73,7 @@ module omneon::lending {
         current_supply_rate: u64, // Current supply interest rate
         total_borrows: u64, // Total amount borrowed
         total_collateral: u64,
+        total_supply: u64,
         debt_positions: Table<address, DebtPosition>, // All debt positions
         override_price: u64, // For internal testing 
         // TODO: Optional caps
@@ -122,10 +123,18 @@ module omneon::lending {
         sender: address
     }
 
+    public struct WithdrawEvent has copy, drop {
+        pool_name: String,
+        shares: u64,
+        withdraw_amount: u64,
+        sender: address
+    }
+
     public struct BorrowEvent has copy, drop {
         pool_name: String,
         collateral_amount: u64,
         borrow_amount: u64,
+        is_more: bool,
         sender: address
     }
 
@@ -173,12 +182,30 @@ module omneon::lending {
             pool_name: generate_pool_name<X, Y>(),  
             collateral_amount,
             borrow_amount, 
+            is_more: false,
             sender: tx_context::sender(ctx)
         });
     }
 
     // Borrow more against existing collateral 
-    public entry fun borrow_more() {
+    public entry fun borrow_more<X,Y>(global: &mut LendingGlobal, additional_borrow_amount: u64, ctx: &mut TxContext) {
+        assert!(has_registered<X, Y>(global), ERR_POOL_NOT_REGISTER);
+        assert!(!is_paused<X,Y>(global), ERR_PAUSED);
+
+        let pool = get_mut_pool<X, Y>(global);
+
+        let coin_x = borrow_more_non_entry<X,Y>(pool, additional_borrow_amount, ctx);
+
+        transfer::public_transfer(coin_x, tx_context::sender(ctx));
+
+        // Emit borrow event
+        emit(BorrowEvent {
+            pool_name: generate_pool_name<X, Y>(),  
+            collateral_amount: 0,
+            borrow_amount: additional_borrow_amount,
+            is_more: true,
+            sender: tx_context::sender(ctx)
+        });
 
     }
 
@@ -310,12 +337,29 @@ module omneon::lending {
     }
 
     // User withdraw assets
-    public entry fun withdraw() {
-        // Check available liquidity
-        // Burn oTokens
-        // Transfer assets to user
-        // Update internal accounting
-        // Emit event
+    public entry fun withdraw<X,Y>(global: &mut LendingGlobal, share_coin: Coin<SHARE<X,Y>>, ctx: &mut TxContext ) {
+        assert!(has_registered<X, Y>(global), ERR_POOL_NOT_REGISTER);
+        assert!(!is_paused<X,Y>(global), ERR_PAUSED);
+
+        let share_amount = coin::value(&share_coin);
+        let pool = get_mut_pool<X, Y>(global);
+
+        let withdraw_coin = withdraw_non_entry<X,Y>(
+            pool,
+            share_coin,
+            ctx
+        );
+        let withdraw_amount = coin::value(&(withdraw_coin));
+
+        transfer::public_transfer(withdraw_coin, tx_context::sender(ctx));
+
+        // Emit supply event
+        emit(WithdrawEvent {
+            pool_name: generate_pool_name<X, Y>(), 
+            shares: share_amount,
+            withdraw_amount,
+            sender: tx_context::sender(ctx)
+        });        
     }
 
     // Liquidate undercollateralized positions
@@ -350,12 +394,34 @@ module omneon::lending {
         (pool.total_borrows, pool.total_collateral)
     }
 
+    public entry fun get_pool_utilization_rate<X,Y>(global: &LendingGlobal): u64 {
+        assert!(has_registered<X, Y>(global), ERR_POOL_NOT_REGISTER);
+        let pool_name = generate_pool_name<X, Y>(); 
+        let pool = bag::borrow<String, POOL<X, Y>>(&global.pools, pool_name);
+        (calculate_utilization_rate(pool))
+    }
+
     public entry fun is_liquidatable() {
 
     }
 
-    public entry fun calculate_health_factor() {
-        
+    // Provides a risk metric for positions (>1 is healthy, <1 is liquidatable)
+    public entry fun calculate_health_factor<X,Y>(global: &LendingGlobal, borrower_address: address, ctx: &TxContext): u64 {
+        assert!(has_registered<X, Y>(global), ERR_POOL_NOT_REGISTER);
+        let pool_name = generate_pool_name<X, Y>(); 
+        let pool = bag::borrow<String, POOL<X, Y>>(&global.pools, pool_name); 
+        let (debt_amount, interest_amount, collateral_amount) = get_debt_with_interest<X,Y>(pool, borrower_address, ctx);
+
+        let total_debt = debt_amount+interest_amount;
+
+        if (total_debt == 0) {
+            10000 // 1.0 when no outstanding debt
+        } else {
+            let collateral_value = get_collateral_value_in_x<X, Y>(pool, collateral_amount);
+            let liquidation_threshold_value = (collateral_value * pool.liquidation_threshold) / 10000;
+            ((liquidation_threshold_value * 10000) / total_debt)
+        }
+
     }
  
     // ======== Public Functions =========
@@ -370,7 +436,7 @@ module omneon::lending {
         let collateral_amount = coin::value(&coin_y);
         assert!(collateral_amount > 0, ERR_ZERO_AMOUNT);
 
-        let mut collateral_balance = coin::into_balance(coin_y);
+        let collateral_balance = coin::into_balance(coin_y);
         balance::join(&mut pool.coin_y, collateral_balance);
 
         // Check borrow cap if it exists
@@ -378,9 +444,9 @@ module omneon::lending {
             let borrow_cap = *option::borrow(&pool.borrow_cap);
             assert!(pool.total_borrows + borrow_amount <= borrow_cap, ERR_CAP_REACHED);
         };
-
+ 
         // Check if the pool has enough liquidity
-        assert!(borrow_amount <= (balance::value(&pool.coin_x) - pool.total_borrows), ERR_INSUFFICIENT_LIQUIDITY);
+        assert!(borrow_amount <= (balance::value(&pool.coin_x)), ERR_INSUFFICIENT_LIQUIDITY);
 
         // Calculate maximum borrow amount based on collateral value and LTV
         let collateral_value = get_collateral_value_in_x<X, Y>(pool, collateral_amount); 
@@ -401,6 +467,44 @@ module omneon::lending {
     }
 
     #[allow(lint(self_transfer))]
+    public fun borrow_more_non_entry<X,Y>(pool: &mut POOL<X,Y>, additional_borrow_amount: u64, ctx: &mut TxContext): Coin<X> {
+        
+        // Update interest accrual first
+        accrue_interest(pool, ctx);
+
+        // Get current debt position with accrued interest
+        let (principal, interest, collateral_amount) = get_debt_with_interest<X, Y>(pool, tx_context::sender(ctx), ctx);
+        let total_current_debt = principal + interest;
+        assert!(total_current_debt > 0, ERR_NO_ACTIVE_DEBT);
+
+        // Calculate total new debt after additional borrowing
+        let total_new_debt = total_current_debt + additional_borrow_amount;
+
+        // Check borrow cap if it exists
+        if (option::is_some(&pool.borrow_cap)) { 
+            let borrow_cap = *option::borrow(&pool.borrow_cap);
+            assert!(pool.total_borrows + additional_borrow_amount <= borrow_cap, ERR_CAP_REACHED);
+        };
+ 
+        // Check if the pool has enough liquidity
+        assert!(additional_borrow_amount <= (balance::value(&pool.coin_x)), ERR_INSUFFICIENT_LIQUIDITY);
+
+        // Calculate maximum borrow amount based on collateral value and LTV 
+        let collateral_value = get_collateral_value_in_x<X, Y>(pool, collateral_amount);  
+        let max_borrow_amount = ((((collateral_value as u128) * (pool.ltv as u128)) / 10000) as u64);
+        assert!(total_new_debt <= max_borrow_amount, ERR_EXCEED_LTV);
+
+        // Update total borrows
+        pool.total_borrows = pool.total_borrows + additional_borrow_amount;
+
+        // Update debt position with new total and reset interest accrual
+        update_debt_position<X, Y>(pool, tx_context::sender(ctx), total_new_debt, collateral_amount, ctx);
+        
+        // Transfer borrowed assets
+        coin::from_balance(balance::split(&mut pool.coin_x, additional_borrow_amount) , ctx)
+    }
+
+    #[allow(lint(self_transfer))]
     public fun supply_non_entry<X,Y>(
         pool: &mut POOL<X,Y>,
         coin_x: Coin<X>,
@@ -414,8 +518,10 @@ module omneon::lending {
         let coin_x_value = coin::value(&coin_x);
         assert!(coin_x_value > 0, ERR_ZERO_AMOUNT);
 
-        let mut coin_x_balance = coin::into_balance(coin_x);
+        let coin_x_balance = coin::into_balance(coin_x);
         balance::join(&mut pool.coin_x, coin_x_balance);
+
+        pool.total_supply = pool.total_supply+coin_x_value;
 
         // Check supply cap if it exists
         if (option::is_some(&pool.supply_cap)) {
@@ -453,8 +559,31 @@ module omneon::lending {
         coin::from_balance(share_balance, ctx)
     }
 
-    public fun withdraw_non_entry() {
+    #[allow(lint(self_transfer))]
+    public fun withdraw_non_entry<X,Y>(pool: &mut POOL<X,Y>, share_coin: Coin<SHARE<X,Y>>, ctx: &mut TxContext ) : Coin<X> {
 
+        // Update interest accrual first
+        accrue_interest(pool, ctx);
+
+        let share_amount = coin::value(&share_coin);
+        assert!( share_amount > 0, ERR_ZERO_AMOUNT);
+
+        // Calculate the maximum amount that can be withdrawn with these shares
+        let withdraw_amount = calculate_amount_from_shares(pool, share_amount);
+
+        // Check if pool has enough liquidity
+        let available_liquidity = balance::value(&pool.coin_x); 
+        assert!(available_liquidity >= withdraw_amount, ERR_INSUFFICIENT_LIQUIDITY);
+
+        balance::decrease_supply(&mut pool.share_supply, coin::into_balance(share_coin));
+
+        pool.total_supply = if (pool.total_supply > withdraw_amount) {
+            pool.total_supply - withdraw_amount
+        } else {
+            0
+        };
+
+        coin::from_balance(balance::split(&mut pool.coin_x, withdraw_amount) , ctx)        
     }
 
     public fun liquidate_non_entry() {
@@ -540,7 +669,8 @@ module omneon::lending {
             current_supply_rate: 0,
             override_price: 10000,
             debt_positions: table::new<address, DebtPosition>(ctx),
-            total_collateral: 0
+            total_collateral: 0,
+            total_supply: 0
         });
 
         emit(
@@ -615,7 +745,7 @@ module omneon::lending {
     }
 
     // Helper function to calculate accrued interest
-    fun accrue_interest<X, Y>(pool: &mut POOL<X, Y>, ctx: &mut TxContext) { 
+    fun accrue_interest<X, Y>(pool: &mut POOL<X, Y>, ctx: &TxContext) { 
         let current_time = tx_context::epoch_timestamp_ms(ctx); 
 
         let time_elapsed_sec = if (current_time > pool.last_update_timestamp) {
@@ -662,7 +792,7 @@ module omneon::lending {
 
     // Helper function to calculate utilization rate
     fun calculate_utilization_rate<X, Y>(pool: &POOL<X, Y>): u64 {
-        let total_supply = balance::value(&pool.coin_x);
+        let total_supply = pool.total_supply;
         
         if (total_supply == 0) {
             0
@@ -777,6 +907,21 @@ module omneon::lending {
         let interest_amount = (principal * interest_factor) / 10000;
         
         interest_amount
+    }
+
+    // Helper function to calculate underlying amount from shares
+    fun calculate_amount_from_shares<X, Y>(pool: &POOL<X, Y>, share_amount: u64): u64 {
+        let total_shares = balance::supply_value(&pool.share_supply); 
+        
+        // If no shares exist yet, return 0
+        if (total_shares == 0) {
+            0
+        } else {
+            // Calculate total pool value including outstanding debt
+            let total_pool_value = balance::value(&pool.coin_x) + pool.total_borrows;
+            // Calculate proportional amount
+            (((share_amount as u128) * (total_pool_value as u128)) / (total_shares as u128) as u64)
+        }
     }
 
     fun has_registered<X, Y>(global: &LendingGlobal): bool {

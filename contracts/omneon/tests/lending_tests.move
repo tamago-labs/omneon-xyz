@@ -53,13 +53,23 @@ module omneon::lending_tests {
         end(scenario);
     }
 
+    #[test]
+    fun test_liquidate() {
+        let mut scenario = scenario();
+        register_pools(&mut scenario);
+        borrow_and_liquidate(&mut scenario);
+        end(scenario);
+    }
+
+    // TODO: Add/remove collateral
+
     // #[test]
-    // fun test_add_remove_collateral() {
+    // fun test_add_collateral() {
 
     // }
 
     // #[test]
-    // fun test_liquidate() {
+    // fun test_remove_collateral() {
 
     // }
 
@@ -469,6 +479,69 @@ module omneon::lending_tests {
             // Health factor drops to 1.8
             assert!(new_health_factor == 18000, new_health_factor); 
             test_scenario::return_shared(global);
+        };
+
+    }
+
+    fun borrow_and_liquidate(test: &mut Scenario) {
+        let ( owner , user, liquidator, _) = users();
+
+        // Initial borrow: User borrows 100 VUSD against 3,000 IOTA collateral
+        next_tx(test, user);
+        {
+            let mut global = test_scenario::take_shared<LendingGlobal>(test);
+            let pool = lending::get_mut_pool_for_testing<VUSD, IOTA>(&mut global);
+
+            burn(lending::borrow_non_entry(
+                pool,
+                mint<IOTA>(3000_000000000, ctx(test)), // Provide 3,000 IOTA as collateral
+                100_000000000,  // Borrow 100 VUSD
+                ctx(test)
+            ));    
+
+            test_scenario::return_shared(global);
+        };
+
+        // Admin manually updates oracle price for IOTA/VUSD to 0.03
+        next_tx(test, owner);
+        {
+            let mut global = test_scenario::take_shared<LendingGlobal>(test);
+            let mut admincap = test_scenario::take_from_sender<AdminCap>(test);
+
+            // Set override price to simulate IOTA dropping to 0.03 VUSD
+            lending::update_override_price<VUSD, IOTA>( &mut global, &mut admincap, 300 );
+
+            test_scenario::return_to_sender(test, admincap);
+            test_scenario::return_shared(global);
+        };
+
+        // Liquidator attempts to liquidate unhealthy position
+        next_tx(test, liquidator);
+        {
+            let mut global = test_scenario::take_shared<LendingGlobal>(test);
+            
+            // Health factor should drop due to price change (below 1.0)
+            let health_factor = lending::calculate_health_factor<VUSD, IOTA>( &global, user, ctx(test)); 
+            assert!( health_factor ==  7200, health_factor); 
+
+            // Position should be marked as liquidatable
+            let is_liquidatable = lending::is_liquidatable<VUSD, IOTA>( &global, user, ctx(test));  
+            assert!( is_liquidatable == true, 0); 
+
+            // Perform liquidation using 50 VUSD to repay part of the user's debt
+            lending::liquidate<VUSD, IOTA>(&mut global, user, mint<VUSD>(50_000000000, ctx(test)), true, ctx(test));
+             
+            test_scenario::return_shared(global);
+        };
+
+        // Verify that liquidator receives 1,750 IOTA collateral
+        next_tx(test, liquidator);
+        {  
+            let iota_token = test_scenario::take_from_sender<Coin<IOTA>>(test); 
+
+            // Liquidator receives 1,750 IOTA in return for 50 VUSD repayment
+            assert!(coin::value(&(iota_token)) == 1750_000000000, 0); 
+            test_scenario::return_to_sender( test, iota_token ); 
         };
 
     }

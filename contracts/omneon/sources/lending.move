@@ -41,7 +41,10 @@ module omneon::lending {
     const ERR_EXCEED_DEBT: u64 = 15;
     const ERR_INSUFFICIENT_AMOUNT: u64 = 16;
     const ERR_STILL_ACTIVE_DEBT: u64 = 17;
-    const ERR_INVALID_BORROWER: u64 = 18;
+    const ERR_INVALID_BORROWER: u64 = 18; 
+    const ERR_NOT_LIQUIDABLE: u64 = 19;
+    const ERR_EXCEED_LIQUIDATION_AMOUNT: u64 = 20;
+    const ERR_REMOVE_WILL_LIQUIDATE: u64 = 21;
 
     // ======== Structs =========
 
@@ -138,12 +141,38 @@ module omneon::lending {
         sender: address
     }
 
+    public struct LiquidationEvent has copy, drop {
+        pool_name: String,
+        borrower: address,
+        repay_amount: u64,
+        seized_collateral: u64,
+        remaining_debt: u64,
+        liquidation_bonus: u64, 
+        sender: address
+    }
+
     public struct RepayEvent has copy, drop {
         pool_name: String,
         repay_amount: u64,
         interest_paid: u64,
         principal_paid: u64,
         remaining_debt: u64,
+        sender: address
+    }
+
+    public struct CollateralAddedEvent has copy, drop {
+        pool_name: String,
+        additional_collateral: u64,
+        new_total_collateral: u64,
+        debt_amount: u64, 
+        sender: address
+    }
+
+    public struct CollateralRemovedEvent has copy, drop {
+        pool_name: String,
+        removed_amount: u64,
+        remaining_collateral: u64,
+        debt_amount: u64,
         sender: address
     }
 
@@ -363,21 +392,166 @@ module omneon::lending {
     }
 
     // Liquidate undercollateralized positions
-    public entry fun liquidate() {
-        // Check liquidation conditions
-        // Calculate collateral to seize
-        // Transfer debt tokens from liquidator
-        // Transfer collateral to liquidator
-        // Update positions
+    public entry fun liquidate<X,Y>(
+        global: &mut LendingGlobal,
+        borrower: address,
+        repay_coin: Coin<X>,
+        receive_underlying: bool, // whether receives collateral or shares
+        ctx: &mut TxContext
+    ) {
+        assert!(has_registered<X, Y>(global), ERR_POOL_NOT_REGISTER);
+        assert!(!is_paused<X,Y>(global), ERR_PAUSED);
+
+        let pool = get_mut_pool<X, Y>(global);
+
+        // Update interest accrual first
+        accrue_interest(pool, ctx);
+
+        let liquidator = tx_context::sender(ctx);
+        assert!(liquidator != borrower, ERR_INVALID_BORROWER );
+
+        let (principal, interest, collateral_amount) = get_debt_with_interest<X, Y>(pool, borrower, ctx);
+        let total_current_debt = principal + interest;
+        assert!(total_current_debt > 0, ERR_NO_ACTIVE_DEBT);
+
+        // Check if position is liquidatable
+        let collateral_value = get_collateral_value_in_x<X, Y>(pool, collateral_amount);
+        let liquidation_threshold_value = (collateral_value * pool.liquidation_threshold) / 10000;
+        assert!(total_current_debt > liquidation_threshold_value, ERR_NOT_LIQUIDABLE);
+
+        // Determine how much can be repaid in this liquidation
+        let liquidator_repay_amount = coin::value(&repay_coin);
+        assert!(liquidator_repay_amount > 0, ERR_ZERO_AMOUNT);
+
+        let max_liquidation_amount = (total_current_debt * 5000) / 10000; // 50% of debt
+        assert!(liquidator_repay_amount <= max_liquidation_amount, ERR_EXCEED_LIQUIDATION_AMOUNT );
+
+        // Calculate collateral to seize with bonus
+        let collateral_to_seize_value = (liquidator_repay_amount * (10000 + pool.liquidation_bonus)) / 10000;
+        
+        // Convert value to actual collateral amount
+        let collateral_to_seize = (((collateral_to_seize_value as u128) * (collateral_amount as u128)) / (collateral_value as u128) as u64);
+        assert!(collateral_amount >= collateral_to_seize, ERR_INSUFFICIENT_AMOUNT);
+
+        // Process repayment
+        let repay_balance = coin::into_balance(repay_coin);
+        balance::join(&mut pool.coin_x, repay_balance);
+        
+        pool.total_borrows = if (pool.total_borrows > liquidator_repay_amount) {
+            pool.total_borrows - liquidator_repay_amount
+        } else {
+            0
+        };
+
+        // Update borrower's debt position
+        update_debt_position<X, Y>(pool, borrower, total_current_debt-liquidator_repay_amount, collateral_amount-collateral_to_seize, ctx);
+
+        // Transfer seized collateral to liquidator
+        if (receive_underlying) {
+            // Liquidator receives the underlying collateral token
+            let seized_collateral = coin::take(&mut pool.coin_y, collateral_to_seize, ctx);
+            transfer::public_transfer(seized_collateral, liquidator);
+        } else {
+            // Liquidator receives share tokens (this gives them interest-bearing position)  
+            let ratio: u128 = ((collateral_to_seize as u128) * 10000) / (balance::value(&pool.coin_x) as u128);
+            let shares_to_mint: u64 = ((((balance::supply_value(&pool.share_supply) as u128) * ratio) / 10000) as u64);
+            let share_balance = balance::increase_supply(&mut pool.share_supply , shares_to_mint);
+            transfer::public_transfer(coin::from_balance(share_balance, ctx), liquidator);
+        };
+
+        // Emit liquidation event  
+        emit(LiquidationEvent {
+            pool_name: generate_pool_name<X, Y>(), 
+            borrower,
+            repay_amount: liquidator_repay_amount,
+            seized_collateral: collateral_to_seize,
+            remaining_debt: total_current_debt - liquidator_repay_amount,
+            liquidation_bonus: pool.liquidation_bonus,
+            sender: liquidator
+        });
+    }
+
+    // Add additional collateral to an existing debt position
+    public entry fun add_collateral<X,Y>(global: &mut LendingGlobal, collateral_coin: Coin<Y>, ctx: &mut TxContext) {
+        assert!(has_registered<X, Y>(global), ERR_POOL_NOT_REGISTER);
+        assert!(!is_paused<X,Y>(global), ERR_PAUSED);
+
+        let pool = get_mut_pool<X, Y>(global);
+        assert!(table::contains( &pool.debt_positions, tx_context::sender(ctx) ), ERR_INVALID_BORROWER );
+
+        let (principal, interest, collateral_amount) = get_debt_with_interest<X, Y>(pool, tx_context::sender(ctx), ctx);
+        let total_current_debt = principal + interest;
+        assert!(total_current_debt > 0, ERR_NO_ACTIVE_DEBT);
+        
+        // Add additional collateral
+        let additional_collateral = coin::value(&collateral_coin);
+        assert!(additional_collateral > 0, ERR_ZERO_AMOUNT);
+        let collateral_balance = coin::into_balance(collateral_coin);
+        balance::join(&mut pool.coin_y, collateral_balance);
+
+        // Update debt position with new total collateral with no rate reset
+        let current_position = table::borrow_mut( &mut pool.debt_positions,  tx_context::sender(ctx) );
+        current_position.collateral_amount = collateral_amount + additional_collateral;
+
         // Emit event
+        emit(CollateralAddedEvent {
+            pool_name: generate_pool_name<X, Y>(),  
+            additional_collateral,
+            new_total_collateral: collateral_amount + additional_collateral,
+            debt_amount: total_current_debt,
+            sender: tx_context::sender(ctx)
+        });
     }
 
-    public entry fun add_collateral() {
+    // Remove excess collateral if it doesn't violate LTV limits
+    public entry fun remove_collateral<X,Y>(global: &mut LendingGlobal, amount: u64, ctx: &mut TxContext) {
+        assert!(has_registered<X, Y>(global), ERR_POOL_NOT_REGISTER);
+        assert!(!is_paused<X,Y>(global), ERR_PAUSED);
+        assert!(amount > 0, ERR_ZERO_AMOUNT);
 
-    }
+        let pool = get_mut_pool<X, Y>(global);
+        assert!(table::contains( &pool.debt_positions, tx_context::sender(ctx) ), ERR_INVALID_BORROWER );
 
-    public entry fun remove_collateral() {
+        // Update interest accrual first
+        accrue_interest(pool, ctx);
 
+        let (principal, interest, collateral_amount) = get_debt_with_interest<X, Y>(pool, tx_context::sender(ctx), ctx);
+        let total_current_debt = principal + interest;
+        assert!(total_current_debt > 0, ERR_NO_ACTIVE_DEBT); 
+        assert!(collateral_amount >= amount, ERR_INSUFFICIENT_AMOUNT);
+
+        // Calculate remaining collateral after removal
+        let remaining_collateral = collateral_amount - amount;
+
+        // Get current values in terms of asset X
+        let remaining_collateral_value = get_collateral_value_in_x<X, Y>(pool, remaining_collateral);
+
+        // Check if removing collateral would violate LTV
+        // We need: total_debt <= remaining_collateral_value * ltv / 10000
+        let minimum_required_collateral_value = (total_current_debt * 10000) / pool.ltv;
+        assert!(remaining_collateral_value >= minimum_required_collateral_value, ERR_EXCEED_LTV);
+
+        // Perform health check to ensure position won't be immediately liquidatable
+        let liquidation_threshold_value = (remaining_collateral_value * pool.liquidation_threshold) / 10000;
+        assert!(liquidation_threshold_value >= total_current_debt, ERR_REMOVE_WILL_LIQUIDATE);
+
+        // Update debt position with new total collateral with no rate reset
+        let current_position = table::borrow_mut( &mut pool.debt_positions,  tx_context::sender(ctx) );
+        current_position.collateral_amount = remaining_collateral;
+
+        // Transfer removed collateral back to user
+        let collateral_coin = coin::take(&mut pool.coin_y, amount, ctx);
+        transfer::public_transfer(collateral_coin, tx_context::sender(ctx));
+
+        // Emit event
+        emit(CollateralRemovedEvent {
+            pool_name: generate_pool_name<X, Y>(),   
+            removed_amount: amount,
+            remaining_collateral,
+            debt_amount: total_current_debt,
+            sender: tx_context::sender(ctx)
+        });
+ 
     }
  
     public entry fun get_current_debt<X,Y>(global: &LendingGlobal, borrower_address: address, ctx: &TxContext): (u64, u64, u64) {
@@ -401,8 +575,11 @@ module omneon::lending {
         (calculate_utilization_rate(pool))
     }
 
-    public entry fun is_liquidatable() {
-
+    public entry fun is_liquidatable<X,Y>(global: &LendingGlobal, borrower_address: address, ctx: &TxContext ) : bool {
+        assert!(has_registered<X, Y>(global), ERR_POOL_NOT_REGISTER);
+        let pool_name = generate_pool_name<X, Y>(); 
+        let pool = bag::borrow<String, POOL<X, Y>>(&global.pools, pool_name);
+        (is_liquidatable_non_entry(pool, borrower_address, ctx))
     }
 
     // Provides a risk metric for positions (>1 is healthy, <1 is liquidatable)
@@ -554,7 +731,6 @@ module omneon::lending {
          // Ensure a valid amount of share tokens 
         assert!(shares_to_mint > 0, ERR_INSUFFICIENT_SHARE_MINTED);
 
-        // let shares = calculate_shares_from_amount<X,Y>(pool, coin_x_value);
         let share_balance = balance::increase_supply(&mut pool.share_supply , shares_to_mint);
         coin::from_balance(share_balance, ctx)
     }
@@ -586,9 +762,6 @@ module omneon::lending {
         coin::from_balance(balance::split(&mut pool.coin_x, withdraw_amount) , ctx)        
     }
 
-    public fun liquidate_non_entry() {
-
-    }
 
     public fun get_mut_pool<X, Y>(global: &mut LendingGlobal): &mut POOL<X, Y> {
         let pool_name = generate_pool_name<X, Y>();
@@ -922,6 +1095,20 @@ module omneon::lending {
             // Calculate proportional amount
             (((share_amount as u128) * (total_pool_value as u128)) / (total_shares as u128) as u64)
         }
+    }
+
+    // Check if position is liquidatable 
+    fun is_liquidatable_non_entry<X, Y>(pool: &POOL<X, Y>, borrower: address, ctx: &TxContext): bool {
+        let (principal, interest, collateral_amount) = get_debt_with_interest<X, Y>(pool, borrower, ctx);
+        let total_current_debt = principal + interest; 
+        if (total_current_debt == 0) {
+            false
+        } else {
+            let collateral_value = get_collateral_value_in_x<X, Y>(pool, collateral_amount);
+            let liquidation_threshold_value = (collateral_value * pool.liquidation_threshold) / 10000;
+            (total_current_debt > liquidation_threshold_value)
+        }
+
     }
 
     fun has_registered<X, Y>(global: &LendingGlobal): bool {

@@ -1,4 +1,5 @@
 
+// This test file covers only the essential core functionalities
 
 module omneon::lending_tests {
 

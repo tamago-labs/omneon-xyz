@@ -1,5 +1,10 @@
 
 
+// Decentralized Lending Protocol built on IOTA Move  
+// Features dynamic interest rates based on pool utilization 
+// Suppliers earn yield via interest-bearing tokens that represent their share of the pool.
+// For simplicity, this MVP supports only one borrowable asset and one collateral asset per pool.
+
 module omneon::lending {
 
     use iota::coin::{Self, Coin};

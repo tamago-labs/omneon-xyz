@@ -1,33 +1,10 @@
 
 import { motion } from 'framer-motion';
-
+import Link from 'next/link';
 
 const Hero = () => {
     return (
         <div className="flex-grow mt-0 sm:mt-[60px] flex flex-col md:flex-row items-center">
-            {/* <div className="md:w-1/2 mb-12 md:mb-0">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8 }}
-                >
-                    <h1 className="text-4xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300 leading-tight mb-6">
-                        Decentralized Lending on IOTA Rebased
-                    </h1>
-                    <p className="text-lg text-gray-300 mb-8 max-w-xl">
-                        A decentralized money market protocol with AI-powered real-time alerts for smarter loan and collateral management
-                    </p>
-
-                    <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                        <button className="px-8 py-3 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium hover:shadow-lg hover:from-blue-600 hover:to-purple-700 transition-all">
-                            Get Started
-                        </button>
-                        <button className="px-8 py-3 rounded-full border border-purple-500 text-white font-medium hover:bg-purple-500/10 transition-all">
-                            Learn More
-                        </button>
-                    </div>
-                </motion.div>
-            </div> */}
 
             <div className="md:w-2/5 flex justify-center">
                 <div className="relative w-full">
@@ -119,14 +96,20 @@ const Hero = () => {
                     </h1>
                     <p className="text-base md:text-lg text-gray-300 mb-8 max-w-3xl">
                         A decentralized money market protocol on IOTA Rebased with AI-powered alerts that let you know when your loan or collateral needs attention
-                    </p> 
+                    </p>
                     <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                        <button className="px-8 py-3 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium hover:shadow-lg hover:from-blue-600 hover:to-purple-700 transition-all">
-                            Get Started
-                        </button>
-                        <button className="px-8 py-3 rounded-full border border-purple-500 text-white font-medium hover:bg-purple-500/10 transition-all">
-                            Learn More
-                        </button>
+                        <Link href="/dashboard">
+                            <button className="px-8 py-3 cursor-pointer rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium hover:shadow-lg hover:from-blue-600 hover:to-purple-700 transition-all">
+                                Get Started
+                            </button>
+                        </Link>
+                        <Link href="https://github.com/tamago-labs/omneon-xyz" target="_blank">
+                            <button className="px-8 py-3 rounded-full border cursor-pointer border-purple-500 text-white font-medium hover:bg-purple-500/10 transition-all">
+                                Learn More
+                            </button>
+                        </Link>
+
+
                     </div>
                 </motion.div>
             </div>

@@ -11,15 +11,21 @@ const Header = () => {
                 <span className="text-white text-xl font-bold">Omneon</span>
             </div>
 
-            <div className="hidden md:flex space-x-8 text-gray-300">
-                <a href="#features" className="hover:text-white transition-colors">Features</a>
-                <a href="#how-it-works" className="hover:text-white transition-colors">How it Works</a>
-                <a href="#tokenomics" className="hover:text-white transition-colors">Tokenomics</a>
-                <a href="#roadmap" className="hover:text-white transition-colors">Roadmap</a>
+            <div className="hidden md:flex space-x-[50px] text-gray-300">
+                <a href="#features" className="hover:text-white transition-colors">
+                    Dashboard
+                </a>
+                <a href="#features" className="hover:text-white transition-colors">
+                    Markets
+                </a>
+                <a href="#how-it-works" className="hover:text-white transition-colors">
+                    Analytics
+                </a>
+                <a href="#tokenomics" className="hover:text-white transition-colors">Leaderboard</a> 
             </div>
 
             <button className="px-6 py-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium hover:shadow-lg hover:from-blue-600 hover:to-purple-700 transition-all">
-                Dashboard
+                Connect Wallet
             </button>
         </nav>
     )

@@ -1,6 +1,8 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { ConnectButton, useCurrentAccount } from '@iota/dapp-kit';
+
 
 const Hero = () => {
     return (
@@ -46,43 +48,7 @@ const Hero = () => {
                             </motion.div>
                         </div>
                     ))}
-
-                    {/* Floating UI elements */}
-                    {/* <motion.div
-                        className="absolute top-6 left-1/2 -translate-x-1/2 w-40 h-16 rounded-lg bg-white/5 backdrop-blur-sm border p-3 border-white/10 "
-                        animate={{
-                            y: [6, 10, 6],
-                            opacity: [0.7, 0.9, 0.7]
-                        }}
-                        transition={{ duration: 4, repeat: Infinity }}
-                    >
-                        <div className="w-4/5 h-3 bg-purple-400/30 rounded-full mb-2" />
-                        <div className="w-2/3 h-3 bg-blue-400/50 rounded-full" />
-                    </motion.div>
-
-                    <motion.div
-                        className="absolute bottom-6 left-16 w-36 h-16 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 p-3"
-                        animate={{
-                            y: [-6, -10, -6],
-                            opacity: [0.7, 0.9, 0.7]
-                        }}
-                        transition={{ duration: 3, repeat: Infinity, delay: 1.5 }}
-                    >
-                        <div className="w-full h-3 bg-purple-400/30 rounded-full mb-2" />
-                        <div className="w-2/3 h-3 bg-blue-400/50 rounded-full" />
-                    </motion.div>
-
-                    <motion.div
-                        className="absolute bottom-20 right-16 w-32 h-16 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 p-3"
-                        animate={{
-                            y: [-20, -24, -20],
-                            opacity: [0.7, 0.9, 0.7]
-                        }}
-                        transition={{ duration: 3.5, repeat: Infinity, delay: 0.8 }}
-                    >
-                        <div className="w-1/3 h-3 bg-blue-400/50 rounded-full mb-2" />
-                        <div className="w-3/4 h-3 bg-gradient-to-r from-blue-400/40 to-purple-400/40 rounded-full" />
-                    </motion.div> */}
+ 
                 </div>
             </div>
             <div className="md:w-3/5 mb-12 md:mb-0">
@@ -98,7 +64,7 @@ const Hero = () => {
                         A decentralized money market protocol on IOTA Rebased with AI-powered alerts that let you know when your loan or collateral needs attention
                     </p>
                     <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                        <Link href="/dashboard">
+                        <Link href="/markets">
                             <button className="px-8 py-3 cursor-pointer rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium hover:shadow-lg hover:from-blue-600 hover:to-purple-700 transition-all">
                                 Get Started
                             </button>
@@ -107,7 +73,7 @@ const Hero = () => {
                             <button className="px-8 py-3 rounded-full border cursor-pointer border-purple-500 text-white font-medium hover:bg-purple-500/10 transition-all">
                                 Learn More
                             </button>
-                        </Link>
+                        </Link> 
 
 
                     </div>

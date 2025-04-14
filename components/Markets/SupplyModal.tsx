@@ -1,48 +1,38 @@
-import { motion } from 'framer-motion';
-import { X } from "react-feather"
-import { useEffect, useCallback, useReducer, useContext } from "react"
+import { useState, useReducer, useCallback } from "react";
+import { motion } from "framer-motion";
+import { X } from "lucide-react";
+import useLending from "@/hooks/useLending";
 import { Puff } from 'react-loading-icons'
-import { useCurrentAccount, useIotaClientQuery } from '@iota/dapp-kit';
-import useLending from '@/hooks/useLending';
 
+const SupplyModal = ({ close, balances, increaseTick, activeMarket }: any) => {
 
-const FaucetModal = ({ close, increaseTick, balances }: any) => {
-
-    const { faucet } = useLending()
-
-    const account = useCurrentAccount()
-    const address = account && account.address
+    const { supply } = useLending()
 
     const [values, dispatch] = useReducer(
         (curVal: any, newVal: any) => ({ ...curVal, ...newVal }),
         {
-            name: undefined,
             errorMessage: undefined,
             loading: false
         }
     )
 
-    const { name, errorMessage, loading } = values
+    const { errorMessage, loading } = values
 
-    useEffect(() => {
-        if (address) {
-            dispatch({ name: address })
-        }
-    }, [address])
+    const [amount, setAmount] = useState<number>(0);
 
-    const onMint = useCallback(async () => {
+    const onSupply = useCallback(async () => {
 
         dispatch({ errorMessage: undefined })
 
-        if (!name || name.length !== 66) {
-            dispatch({ errorMessage: "Invalid address" })
+        if (1 > amount) {
+            dispatch({ errorMessage: "Minimum amount is 1" })
             return
         }
 
         dispatch({ loading: true })
         try {
 
-            const txId = await faucet(name)
+            const txId = await supply(amount, activeMarket.borrow_asset_type, activeMarket.collateral_asset_type)
 
             dispatch({ loading: false })
 
@@ -60,7 +50,9 @@ const FaucetModal = ({ close, increaseTick, balances }: any) => {
             dispatch({ loading: false })
             dispatch({ errorMessage: error.message })
         }
-    }, [name, address, faucet])
+    }, [amount, supply, activeMarket])
+
+    const balance = balances ? (activeMarket.id === 0 ? balances[1] : balances[0]) : 0
 
     return (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -68,11 +60,10 @@ const FaucetModal = ({ close, increaseTick, balances }: any) => {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="bg-gray-800 rounded-xl border border-gray-700 p-6 max-w-md w-full "
+                className="bg-gray-800 rounded-xl border border-gray-700 p-6 max-w-md w-full"
             >
                 <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold">vUSD Faucet</h3>
-
+                    <h3 className="text-xl font-bold">Supply {activeMarket.borrow_asset} </h3>
                     <button
                         className="text-gray-400 hover:text-white"
                         onClick={close}
@@ -80,34 +71,40 @@ const FaucetModal = ({ close, increaseTick, balances }: any) => {
                         <X />
                     </button>
                 </div>
-                <div>
-                    {/* <div className="py-2 pt-0 ">
-                        <h2 className="my-2 mt-0">Your wallet address:</h2>
-                        <input type="text" value={name} onChange={(e) => dispatch({ name: e.target.value })} id="asset" className={`block w-full p-2  rounded-lg text-base bg-gray-700 border border-gray-600 placeholder-gray text-white focus:outline-none`} />
-                    </div> */}
+
+                <div className="space-y-4">
                     <div className="mb-6">
-                        <label className="block text-gray-300 mb-2">Your Wallet Address</label>
+                        <label className="block text-gray-300 mb-2">Amount to Supply</label>
                         <div className="relative">
                             <input
-                                type="text"
+                                type="number"
                                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
-                                placeholder="Enter wallet address"
-                                value={name}
-                                onChange={(e) => dispatch({ name: e.target.value })}
+                                placeholder="Enter amount"
+                                value={amount}
+                                onChange={(e) => setAmount(Number(e.target.value))}
                             />
+                            <button
+                                className="absolute right-3 top-3 text-sm bg-blue-600 px-2 py-1 rounded-md"
+                                onClick={() => setAmount(balance ? Number(balance) : 0)}
+                            >
+                                MAX
+                            </button>
                         </div>
                         <div className="text-sm text-gray-400 mt-2">
-                            Balance: {balances && balances[1] ? balances[1] : 0} vUSD
+                            {activeMarket.id === 0 && <>Balance: {balance ? balance : 0} vUSD</>}
+                            {activeMarket.id === 1 && <>Balance: {balance ? balance : 0} IOTA</>}
                         </div>
-                    </div> 
+                    </div>
+
                     <div className="flex space-x-3">
                         <button
-                            className={`flex-1 px-4 py-3 bg-blue-600 rounded-lg transition-colors ${!name
+                            className={`flex-1 cursor-pointer px-4 py-3 bg-blue-600 rounded-lg transition-colors ${!amount || parseFloat(`${amount}`) <= 0
                                 ? 'opacity-50 cursor-not-allowed'
                                 : 'hover:bg-blue-700'
                                 }`}
-                            disabled={!name}
-                            onClick={onMint}
+                                disabled={!amount || parseFloat(`${amount}`) <= 0}
+                            // disabled={!stakeAmount || parseFloat(stakeAmount) <= 0 || parseFloat(stakeAmount) > userWallet[activePool.name]}
+                                onClick={onSupply}
                         >
                             {loading
                                 ?
@@ -117,7 +114,7 @@ const FaucetModal = ({ close, increaseTick, balances }: any) => {
                                 />
                                 :
                                 <>
-                                    Send 100 vUSD
+                                    Confirm Supply
                                 </>
                             }
                         </button>
@@ -128,17 +125,16 @@ const FaucetModal = ({ close, increaseTick, balances }: any) => {
                             Cancel
                         </button>
                     </div>
-
                     {errorMessage && (
                         <p className="text-sm text-center mt-2 text-secondary">
                             {errorMessage}
                         </p>
                     )}
-
                 </div>
             </motion.div>
         </div>
     )
+
 }
 
-export default FaucetModal
+export default SupplyModal

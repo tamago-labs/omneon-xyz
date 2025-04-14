@@ -11,7 +11,7 @@ const Banner = () => {
         >
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
                 <h3 className="text-purple-300 font-semibold mb-1">Adaptive Interest Model</h3>
-                <p className="text-white text-xl md:text-2xl font-bold"> That Reflect Market Conditions</p>
+                <p className="text-white text-xl md:text-2xl font-bold">By Decentralized Pool Usage</p>
             </div>
 
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
@@ -20,8 +20,8 @@ const Banner = () => {
             </div>
 
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-                <h3 className="text-pink-300 font-semibold mb-1">Proactive Email Notifications</h3>
-                <p className="text-white text-xl md:text-2xl font-bold">With AI To Your Inbox Everyday</p>
+                <h3 className="text-pink-300 font-semibold mb-1">Smart Email Notifications</h3>
+                <p className="text-white text-xl md:text-2xl font-bold">Stay Informed With AI</p>
             </div>
         </motion.div>
     )

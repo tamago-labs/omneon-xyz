@@ -5,12 +5,17 @@ import { motion } from 'framer-motion';
 import FaucetModal from './FaucetModal';
 import { useCurrentAccount } from '@iota/dapp-kit';
 import useLending from '@/hooks/useLending';
+import { RefreshCw } from 'react-feather';
+import SupplyModal from './SupplyModal';
+import WithdrawModal from './WithdrawModal';
+
 
 // Mock data for demonstration
-const marketData = [
+const marketDataConfig = [
     {
-        id: 'iota',
+        id: 1,
         name: 'IOTA',
+        image: "./images/iota-icon.png",
         icon: '🔷',
         supplyApy: 2.34,
         borrowApr: 3.78,
@@ -23,8 +28,9 @@ const marketData = [
         borrowed: 0,
     },
     {
-        id: 'usdc',
-        name: 'USDC',
+        id: 0,
+        name: 'vUSD',
+        image: "./images/vusd-icon.png",
         icon: '💵',
         supplyApy: 4.21,
         borrowApr: 5.67,
@@ -36,58 +42,60 @@ const marketData = [
         supplied: 0,
         borrowed: 200.0,
     },
-    {
-        id: 'eth',
-        name: 'ETH',
-        icon: '⬙',
-        supplyApy: 1.12,
-        borrowApr: 2.45,
-        totalSupply: 8950000,
-        liquidity: 1750000,
-        utilizationRate: 80,
-        ltv: 70,
-        wallet: 0.5,
-        supplied: 0,
-        borrowed: 0,
-    },
-    {
-        id: 'btc',
-        name: 'BTC',
-        icon: '₿',
-        supplyApy: 0.89,
-        borrowApr: 2.11,
-        totalSupply: 15780000,
-        liquidity: 4230000,
-        utilizationRate: 73,
-        ltv: 65,
-        wallet: 0.02,
-        supplied: 0,
-        borrowed: 0,
-    },
-    {
-        id: 'dai',
-        name: 'DAI',
-        icon: '◈',
-        supplyApy: 3.98,
-        borrowApr: 5.12,
-        totalSupply: 9870000,
-        liquidity: 2340000,
-        utilizationRate: 76,
-        ltv: 80,
-        wallet: 750.25,
-        supplied: 0,
-        borrowed: 0,
-    }
+    // {
+    //     id: 'eth',
+    //     name: 'ETH',
+    //     icon: '⬙',
+    //     supplyApy: 1.12,
+    //     borrowApr: 2.45,
+    //     totalSupply: 8950000,
+    //     liquidity: 1750000,
+    //     utilizationRate: 80,
+    //     ltv: 70,
+    //     wallet: 0.5,
+    //     supplied: 0,
+    //     borrowed: 0,
+    // },
+    // {
+    //     id: 'btc',
+    //     name: 'BTC',
+    //     icon: '₿',
+    //     supplyApy: 0.89,
+    //     borrowApr: 2.11,
+    //     totalSupply: 15780000,
+    //     liquidity: 4230000,
+    //     utilizationRate: 73,
+    //     ltv: 65,
+    //     wallet: 0.02,
+    //     supplied: 0,
+    //     borrowed: 0,
+    // },
+    // {
+    //     id: 'dai',
+    //     name: 'DAI',
+    //     icon: '◈',
+    //     supplyApy: 3.98,
+    //     borrowApr: 5.12,
+    //     totalSupply: 9870000,
+    //     liquidity: 2340000,
+    //     utilizationRate: 76,
+    //     ltv: 80,
+    //     wallet: 750.25,
+    //     supplied: 0,
+    //     borrowed: 0,
+    // }
 ];
 
 enum Modal {
     None,
-    Faucet
+    Faucet,
+    Supply,
+    Withdraw
 }
 
 const MarketsContainer = () => {
 
-    const { fetchBalances } = useLending()
+    const { fetchBalances, loadPools } = useLending()
 
     const account = useCurrentAccount()
     const address = account && account.address
@@ -96,17 +104,20 @@ const MarketsContainer = () => {
         (curVal: any, newVal: any) => ({ ...curVal, ...newVal }),
         {
             balances: undefined,
-            tick: 1
+            tick: 1,
+            loading: true,
+            markets: [],
+            activeMarket: undefined
         }
     )
 
-    const { balances, tick } = values
+    const { activeMarket, balances, tick, loading, markets } = values
 
     const [modal, setModal] = useState<Modal>(Modal.None)
 
     const [activeTab, setActiveTab] = useState('all');
     const [sortConfig, setSortConfig] = useState({ key: 'supplyApy', direction: 'desc' });
-    const [markets, setMarkets] = useState(marketData);
+    // const [markets, setMarkets] = useState<any>([]);
 
     useEffect(() => {
         address && fetchBalances(address).then(
@@ -118,34 +129,46 @@ const MarketsContainer = () => {
         )
     }, [address, tick])
 
+
+    useEffect(() => {
+        loadPools(address).then(
+            (markets) => {
+                dispatch({
+                    markets,
+                    loading: false
+                })
+            }
+        )
+    }, [tick, address])
+
     const increaseTick = useCallback(() => {
         dispatch({
             tick: tick + 1
         })
     }, [tick])
 
-    useEffect(() => {
-        // Filter markets based on active tab
-        let filteredMarkets = [...marketData];
-        if (activeTab === 'supplied') {
-            filteredMarkets = marketData.filter(market => market.supplied > 0);
-        } else if (activeTab === 'borrowed') {
-            filteredMarkets = marketData.filter(market => market.borrowed > 0);
-        }
+    // useEffect(() => {
+    //     // Filter markets based on active tab
+    //     let filteredMarkets = [...marketData];
+    //     if (activeTab === 'supplied') {
+    //         filteredMarkets = marketData.filter((market: any) => market.supplied > 0);
+    //     } else if (activeTab === 'borrowed') {
+    //         filteredMarkets = marketData.filter((market: any) => market.borrowed > 0);
+    //     }
 
-        // Sort markets based on sort config
-        filteredMarkets.sort((a: any, b: any) => {
-            if (a[sortConfig.key] < b[sortConfig.key]) {
-                return sortConfig.direction === 'asc' ? -1 : 1;
-            }
-            if (a[sortConfig.key] > b[sortConfig.key]) {
-                return sortConfig.direction === 'asc' ? 1 : -1;
-            }
-            return 0;
-        });
+    //     // Sort markets based on sort config
+    //     filteredMarkets.sort((a: any, b: any) => {
+    //         if (a[sortConfig.key] < b[sortConfig.key]) {
+    //             return sortConfig.direction === 'asc' ? -1 : 1;
+    //         }
+    //         if (a[sortConfig.key] > b[sortConfig.key]) {
+    //             return sortConfig.direction === 'asc' ? 1 : -1;
+    //         }
+    //         return 0;
+    //     });
 
-        setMarkets(filteredMarkets);
-    }, [activeTab, sortConfig]);
+    //     setMarkets(filteredMarkets);
+    // }, [activeTab, sortConfig]);
 
     const requestSort = (key: any) => {
         let direction = 'desc';
@@ -164,12 +187,13 @@ const MarketsContainer = () => {
     };
 
     const formatCurrency = (num: any) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(num);
+        if (num >= 1_000_000) {
+            return `$${(num / 1_000_000).toFixed(1)}M`;
+        } else if (num >= 1_000) {
+            return `$${(num / 1_000).toFixed(1)}K`;
+        } else {
+            return `$${num}`;
+        }
     };
 
     const getSortIndicator = (key: any) => {
@@ -177,10 +201,15 @@ const MarketsContainer = () => {
         return sortConfig.direction === 'asc' ? '↑' : '↓';
     };
 
+    console.log("markets: ", markets)
+
     return (
         <div className="min-h-screen text-white">
 
-            {modal === Modal.Faucet && <FaucetModal increaseTick={increaseTick} close={() => setModal(Modal.None)} />}
+            {modal === Modal.Faucet && <FaucetModal balances={balances} increaseTick={increaseTick} close={() => setModal(Modal.None)} />}
+            {(modal === Modal.Supply && activeMarket) && <SupplyModal balances={balances} activeMarket={activeMarket} increaseTick={increaseTick} close={() => setModal(Modal.None)} />}
+            {(modal === Modal.Withdraw && activeMarket) && <WithdrawModal balances={balances} activeMarket={activeMarket} increaseTick={increaseTick} close={() => setModal(Modal.None)} />}
+            
 
             <div className="container mx-auto  ">
                 <h1 className="text-3xl font-bold mb-2">Markets</h1>
@@ -250,7 +279,7 @@ const MarketsContainer = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {markets.map((market) => (
+                                {markets.map((market: any) => (
                                     <motion.tr
                                         key={market.id}
                                         initial={{ opacity: 0 }}
@@ -259,11 +288,11 @@ const MarketsContainer = () => {
                                     >
                                         <td className="px-6 py-4">
                                             <div className="flex items-center">
-                                                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mr-3 text-lg">
-                                                    {market.icon}
-                                                </div>
+                                                <img src={market.image} className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mr-3 text-lg">
+                                                    {/* {market.icon} */}
+                                                </img>
                                                 <div>
-                                                    <div className="font-medium">{market.name}</div>
+                                                    <div className="font-medium">{market.borrow_asset}</div>
                                                     <div className="text-xs text-gray-400">
                                                         {market.supplied > 0 && (
                                                             <span className="mr-2 text-green-400">
@@ -280,38 +309,55 @@ const MarketsContainer = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <span className="text-green-400">{market.supplyApy.toFixed(2)}%</span>
+                                            <span className="text-green-400">
+                                                {/* {market.supplyApy.toFixed(2)}% */}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <span className="text-red-400">{market.borrowApr.toFixed(2)}%</span>
+                                            <span className="text-red-400">
+                                                {/* {market.borrowApr.toFixed(2)}% */}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            {formatCurrency(market.totalSupply)}
+                                            {/* {formatCurrency(market.totalSupply)} */}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            {formatCurrency(market.liquidity)}
+                                            {/* {formatCurrency(market.liquidity)} */}
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end">
-                                                <div className="w-16 bg-gray-700 rounded-full h-2 mr-2">
+                                                {/* <div className="w-16 bg-gray-700 rounded-full h-2 mr-2">
                                                     <div
                                                         className="bg-blue-500 h-2 rounded-full"
                                                         style={{ width: `${market.utilizationRate}%` }}
                                                     ></div>
                                                 </div>
-                                                <span>{market.utilizationRate}%</span>
+                                                <span>{market.utilizationRate}%</span> */}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            {formatNumber(market.wallet)}
+                                            {/* {formatNumber(market.wallet)} */}
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex space-x-2 justify-end">
-                                                <button className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded-md text-sm transition-colors">
+                                                <button
+                                                    onClick={() => {
+                                                        dispatch({
+                                                            activeMarket: market
+                                                        })
+                                                        setModal(Modal.Supply)
+                                                    }} className="px-3 cursor-pointer py-1 bg-blue-600 hover:bg-blue-700 rounded-md text-sm transition-colors">
                                                     Supply
                                                 </button>
-                                                {market.supplied > 0 && (
-                                                    <button className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-md text-sm transition-colors">
+                                                {balances && balances[market.id + 2] > 0 && (
+                                                    <button
+                                                        onClick={() => {
+                                                            dispatch({
+                                                                activeMarket: market
+                                                            })
+                                                            setModal(Modal.Withdraw)
+                                                        }}
+                                                        className="px-3 cursor-pointer py-1 bg-gray-700 hover:bg-gray-600 rounded-md text-sm transition-colors">
                                                         Withdraw
                                                     </button>
                                                 )}
@@ -330,8 +376,9 @@ const MarketsContainer = () => {
 
                                 {markets.length === 0 && (
                                     <tr>
-                                        <td className="px-6 py-8 text-center text-gray-400">
-                                            No markets matching your criteria.
+                                        <td className="px-6 py-8   text-gray-400">
+                                            {/* No markets matching your criteria */}
+                                            {loading && <RefreshCw className=' text-white animate-spin' size={20} />}
                                         </td>
                                     </tr>
                                 )}
@@ -347,15 +394,16 @@ const MarketsContainer = () => {
                             vUSD Faucet
                         </h3>
                         <p className="text-gray-300 text-sm">
-                            Along with the IOTA native token, we use vUSD for borrowing and lending on our platform.
+                            Along with the IOTA native token, we also use vUSD for borrowing and lending on our platform.
                         </p>
                         <div className="flex justify-between my-4 mb-2 space-y-2 text-sm">
-                            <span>Curret Balance</span>
+                            <span>Current Balance</span>
                             {address ? <span>{(balances && balances[1]) ? (balances[1]).toLocaleString() : 0} vUSD</span> : <span>Not connected</span>}
                         </div>
                         <button
                             onClick={() => setModal(Modal.Faucet)}
-                            className="flex-1 cursor-pointer md:flex-none px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg flex items-center justify-center transition-colors"
+                            disabled={!address}
+                            className={`flex-1  ${!address ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}  md:flex-none px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg flex items-center justify-center transition-colors`}
                         >
                             Get Testnet vUSD
                         </button>
@@ -368,17 +416,17 @@ const MarketsContainer = () => {
                             Each asset has a collateral factor that determines how much you can borrow against it.
                         </p>
                         <div className="space-y-2">
-                            {marketData.slice(0, 4).map((market) => (
+                            {markets.slice(0, 4).map((market: any) => (
                                 <div key={`cf-${market.id}`} className="flex justify-between text-sm">
-                                    <span>{market.name}</span>
-                                    <span>{market.ltv}%</span>
+                                    <span>{market.borrow_asset}</span>
+                                    <span>{market.ltv * 100}%</span>
                                 </div>
                             ))}
                         </div>
                     </div>
 
                     <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700 p-6 lg:col-span-2">
-                        <h3 className="text-lg font-medium mb-4">AI-Enhanced Risk System</h3>
+                        <h3 className="text-lg font-medium mb-4">AI-Enhanced Notifications</h3>
                         <p className="text-gray-300 text-sm">
                             Omneon uses advanced AI to optimize interest rates and manage risk. Our system continuously monitors market conditions to adjust parameters for maximum capital efficiency while maintaining protocol safety.
                         </p>

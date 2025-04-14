@@ -20,8 +20,11 @@ const Header = () => {
             </Link>
 
             <div className="hidden md:flex space-x-[50px] text-gray-300">
-                <Link href="/dashboard" className={`hover:text-white transition-colors ${ pathname === "/dashboard" && "text-white" }`}>
+                {/* <Link href="/dashboard" className={`hover:text-white transition-colors ${ pathname === "/dashboard" && "text-white" }`}>
                     Dashboard
+                </Link> */}
+                <Link href="/" className={`hover:text-white transition-colors ${ pathname === "/" && "text-white" }`}>
+                    Home
                 </Link>
                 <Link href="/markets" className={`hover:text-white transition-colors ${ pathname === "/markets" && "text-white" }`}>
                     Markets

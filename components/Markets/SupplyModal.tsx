@@ -3,9 +3,11 @@ import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import useLending from "@/hooks/useLending";
 import { Puff } from 'react-loading-icons'
+import { usePrice } from "@/hooks/usePrice";
 
 const SupplyModal = ({ close, balances, increaseTick, activeMarket }: any) => {
 
+    const { toUSD } = usePrice()
     const { supply } = useLending()
 
     const [values, dispatch] = useReducer(
@@ -90,10 +92,30 @@ const SupplyModal = ({ close, balances, increaseTick, activeMarket }: any) => {
                                 MAX
                             </button>
                         </div>
-                        <div className="text-sm text-gray-400 mt-2">
-                            {activeMarket.id === 0 && <>Balance: {balance ? balance : 0} vUSD</>}
-                            {activeMarket.id === 1 && <>Balance: {balance ? balance : 0} IOTA</>}
+                        <div className="mt-2 flex flex-row text-sm text-gray-400">
+                            <div className=" ">
+                                {activeMarket.id === 0 && <>Balance: {balance ? balance.toFixed(4) : 0} vUSD</>}
+                                {activeMarket.id === 1 && <>Balance: {balance ? balance.toFixed(4) : 0} IOTA</>}
+                            </div>
+                            <div className="ml-auto">
+                                ~${activeMarket.id === 0 ? (toUSD("VUSD", amount)).toFixed(2) : (toUSD("IOTA", amount)).toFixed(2)}
+                            </div>
                         </div>
+
+                    </div>
+
+                    {/* Supply Information Section */}
+                    <div className="bg-gray-700/50 rounded-lg p-4 mb-6 space-y-2">
+                        <div className="flex justify-between text-sm">
+                            <span className="text-gray-400">Supply APY</span>
+                            {/* <span className="text-white">{supplyApy || 0}%</span> */}
+                        </div>
+                        {/* <div className="flex justify-between text-sm">
+                            <span className="text-gray-400">Distribution APY</span> 
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <span className="text-gray-400">Total APY</span> 
+                        </div> */}
                     </div>
 
                     <div className="flex space-x-3">
@@ -102,9 +124,8 @@ const SupplyModal = ({ close, balances, increaseTick, activeMarket }: any) => {
                                 ? 'opacity-50 cursor-not-allowed'
                                 : 'hover:bg-blue-700'
                                 }`}
-                                disabled={!amount || parseFloat(`${amount}`) <= 0}
-                            // disabled={!stakeAmount || parseFloat(stakeAmount) <= 0 || parseFloat(stakeAmount) > userWallet[activePool.name]}
-                                onClick={onSupply}
+                            disabled={!amount || parseFloat(`${amount}`) <= 0} 
+                            onClick={onSupply}
                         >
                             {loading
                                 ?

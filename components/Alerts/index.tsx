@@ -175,7 +175,7 @@ const AlertsContainer = () => {
                 <p className="text-gray-300 mb-8">Configure personalized notifications for your account</p>
 
                 {/* Email Configuration Panel */}
-                <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700 p-6 mb-8">
+                {/* <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700 p-6 mb-8">
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
                         <div className="mb-4 md:mb-0">
                             <h2 className="text-xl font-bold mb-1 flex items-center">
@@ -233,7 +233,7 @@ const AlertsContainer = () => {
                         <div>
                             <button
                                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg flex items-center transition-colors"
-                                onClick={() => {/* Open delivery settings modal */ }}
+                                 
                             >
                                 <Settings size={16} className="mr-2" />
                                 Delivery Settings
@@ -327,10 +327,10 @@ const AlertsContainer = () => {
                             </p>
                         </div>
                     </div>
-                </div>
+                </div> */}
 
                 {/* Alert Categories */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     {['position', 'market', 'rewards', 'system'].map((category) => (
                         <button
                             key={category}
@@ -349,10 +349,10 @@ const AlertsContainer = () => {
                             </div>
                         </button>
                     ))}
-                </div>
+                </div> */}
 
                 {/* Alerts Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                     {alerts.map((alert: any) => (
                         <div
                             key={alert.id}
@@ -450,10 +450,10 @@ const AlertsContainer = () => {
                             )}
                         </div>
                     ))}
-                </div>
+                </div> */}
 
                 {/* Alert Settings Modal */}
-                {editingAlert && (
+                {/* {editingAlert && (
                     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
@@ -513,7 +513,7 @@ const AlertsContainer = () => {
                                     </div>
                                 )}
 
-                                {/* Add more specific settings for other alert types */}
+                                 
 
                                 <div className="flex justify-end space-x-3 mt-6">
                                     <button
@@ -532,10 +532,10 @@ const AlertsContainer = () => {
                             </div>
                         </motion.div>
                     </div>
-                )}
+                )} */}
 
                 {/* Alert Test Section */}
-                <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700 p-6">
+                {/* <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700 p-6">
                     <h2 className="text-xl font-bold mb-4">Test Your Alerts</h2>
                     <p className="text-gray-300 mb-4">
                         Send a test notification to verify your email is properly configured
@@ -555,7 +555,7 @@ const AlertsContainer = () => {
                             Send Test Notification
                         </button>
                     </div>
-                </div>
+                </div> */}
             </div>
         </div>
     )

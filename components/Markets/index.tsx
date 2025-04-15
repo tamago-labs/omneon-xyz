@@ -5,10 +5,11 @@ import { motion } from 'framer-motion';
 import FaucetModal from './FaucetModal';
 import { useCurrentAccount } from '@iota/dapp-kit';
 import useLending from '@/hooks/useLending';
-import { RefreshCw } from 'react-feather';
+import { ArrowRight, RefreshCw } from 'react-feather';
 import SupplyModal from './SupplyModal';
 import WithdrawModal from './WithdrawModal';
-
+import Link from 'next/link';
+import BorrowModal from './BorrowModal';
 
 // Mock data for demonstration
 const marketDataConfig = [
@@ -90,7 +91,8 @@ enum Modal {
     None,
     Faucet,
     Supply,
-    Withdraw
+    Withdraw,
+    Borrow
 }
 
 const MarketsContainer = () => {
@@ -192,7 +194,7 @@ const MarketsContainer = () => {
         } else if (num >= 1_000) {
             return `$${(num / 1_000).toFixed(1)}K`;
         } else {
-            return `$${num}`;
+            return `$${num.toFixed(2)}`;
         }
     };
 
@@ -209,7 +211,7 @@ const MarketsContainer = () => {
             {modal === Modal.Faucet && <FaucetModal balances={balances} increaseTick={increaseTick} close={() => setModal(Modal.None)} />}
             {(modal === Modal.Supply && activeMarket) && <SupplyModal balances={balances} activeMarket={activeMarket} increaseTick={increaseTick} close={() => setModal(Modal.None)} />}
             {(modal === Modal.Withdraw && activeMarket) && <WithdrawModal balances={balances} activeMarket={activeMarket} increaseTick={increaseTick} close={() => setModal(Modal.None)} />}
-            
+            {(modal === Modal.Borrow && activeMarket) && <BorrowModal balances={balances} activeMarket={activeMarket} increaseTick={increaseTick} close={() => setModal(Modal.None)} />}
 
             <div className="container mx-auto  ">
                 <h1 className="text-3xl font-bold mb-2">Markets</h1>
@@ -310,29 +312,29 @@ const MarketsContainer = () => {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <span className="text-green-400">
-                                                {/* {market.supplyApy.toFixed(2)}% */}
+                                                {market.supplyRate.toFixed(2)}%
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <span className="text-red-400">
-                                                {/* {market.borrowApr.toFixed(2)}% */}
+                                                {market.borrowRate.toFixed(2)}%
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            {/* {formatCurrency(market.totalSupply)} */}
+                                            {formatCurrency(market.totalSupply)}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            {/* {formatCurrency(market.liquidity)} */}
+                                            {formatCurrency(market.liquidity)}
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end">
-                                                {/* <div className="w-16 bg-gray-700 rounded-full h-2 mr-2">
+                                                <div className="w-16 bg-gray-700 rounded-full h-2 mr-2">
                                                     <div
                                                         className="bg-blue-500 h-2 rounded-full"
                                                         style={{ width: `${market.utilizationRate}%` }}
                                                     ></div>
                                                 </div>
-                                                <span>{market.utilizationRate}%</span> */}
+                                                <span>{market.utilizationRate.toFixed(2)}%</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
@@ -361,7 +363,14 @@ const MarketsContainer = () => {
                                                         Withdraw
                                                     </button>
                                                 )}
-                                                <button className="px-3 py-1 bg-purple-600 hover:bg-purple-700 rounded-md text-sm transition-colors">
+                                                <button
+                                                    onClick={() => {
+                                                        dispatch({
+                                                            activeMarket: market
+                                                        })
+                                                        setModal(Modal.Borrow)
+                                                    }}
+                                                    className="px-3 cursor-pointer py-1 bg-purple-600 hover:bg-purple-700 rounded-md text-sm transition-colors">
                                                     Borrow
                                                 </button>
                                                 {market.borrowed > 0 && (
@@ -411,9 +420,11 @@ const MarketsContainer = () => {
                     </div>
 
                     <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700 p-6">
-                        <h3 className="text-lg font-medium mb-4">Collateral Factor</h3>
+                        <h3 className="text-lg font-medium mb-4">
+                            Loan-to-Value (LTV)
+                        </h3>
                         <p className="text-gray-300 text-sm mb-4">
-                            Each asset has a collateral factor that determines how much you can borrow against it.
+                            Each asset has a maximum LTV, which determines how much you can borrow against your collateral.
                         </p>
                         <div className="space-y-2">
                             {markets.slice(0, 4).map((market: any) => (
@@ -425,19 +436,29 @@ const MarketsContainer = () => {
                         </div>
                     </div>
 
-                    <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700 p-6 lg:col-span-2">
-                        <h3 className="text-lg font-medium mb-4">AI-Enhanced Notifications</h3>
+                    <div className="bg-gray-800/30 flex flex-col backdrop-blur-sm rounded-xl border border-gray-700 p-6 lg:col-span-2">
+                        <h3 className="text-lg font-medium mb-4">
+                            Link Your Email to Setup Personalized Alerts</h3>
                         <p className="text-gray-300 text-sm">
-                            Omneon uses advanced AI to optimize interest rates and manage risk. Our system continuously monitors market conditions to adjust parameters for maximum capital efficiency while maintaining protocol safety.
+                            Omneon uses AI to monitor your health factor, accrued interest, and system status—then generates a personalized report delivered straight to your inbox. Stay informed and act quickly when your loan or collateral needs attention.
                         </p>
-                        <div className="mt-4 p-3 bg-blue-900/50 rounded-md border border-blue-700/50 text-sm">
+                        <Link href="/alerts" className='mt-auto mr-auto cursor-pointer'>
+                            <button
+                                className={`flex-1 cursor-pointer md:flex-none px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center justify-center transition-colors`}
+                            >
+                                Link Now
+                                <ArrowRight className='ml-1' />
+                            </button>
+                        </Link>
+
+                        {/* <div className="mt-4 p-3 bg-blue-900/50 rounded-md border border-blue-700/50 text-sm">
                             <div className="flex items-start">
                                 <div className="text-blue-400 mr-2">ℹ️</div>
                                 <div>
                                     <strong className="text-blue-300">Protocol Safety:</strong> When borrowing, maintain a safe distance from your maximum borrowing limit to avoid liquidation risk during market volatility.
                                 </div>
                             </div>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </div>

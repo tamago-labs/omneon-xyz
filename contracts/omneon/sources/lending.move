@@ -16,6 +16,14 @@ module omneon::lending {
     use iota::balance::{Self, Supply, Balance};
     use iota::event::emit;
     use iota::table::{Self, Table};
+    use iota::clock::{Clock, Self};
+    
+    use pyth::price_info;
+    use pyth::price_identifier;
+    use pyth::price;
+    use pyth::pyth;
+    use pyth::price_info::PriceInfoObject;
+    use pyth::i64::{Self};
 
     use std::string::{Self, String}; 
     use std::type_name::{get, into_string};
@@ -50,6 +58,7 @@ module omneon::lending {
     const ERR_NOT_LIQUIDABLE: u64 = 19;
     const ERR_EXCEED_LIQUIDATION_AMOUNT: u64 = 20;
     const ERR_REMOVE_WILL_LIQUIDATE: u64 = 21;
+    const ERR_INVALID_PRICE_ID: u64 = 22;
 
     // ======== Structs =========
 
@@ -83,7 +92,9 @@ module omneon::lending {
         total_collateral: u64,
         total_supply: u64,
         debt_positions: Table<address, DebtPosition>, // All debt positions
-        override_price: u64, // For internal testing 
+        current_price: u64,
+        last_update_price_timestamp: u64,
+        is_invert: bool,
         // TODO: Optional caps
         borrow_cap: Option<u64>, // Maximum amount that can be borrowed
         supply_cap: Option<u64> // Maximum amount that can be supplied 
@@ -781,6 +792,28 @@ module omneon::lending {
         pool.has_paused
     }
 
+    // Updates the current price in the lending pool using Pyth Oracle.
+    // This implementation is currently fixed to the IOTA/USD feed for simplicity.
+    public fun update_current_price<X,Y>(global: &mut LendingGlobal, clock: &Clock, price_info_object: &PriceInfoObject ) {
+        let pool = get_mut_pool<X, Y>(global);
+
+        let max_age = 60;
+        let price_struct = pyth::get_price_no_older_than(price_info_object, clock, max_age);
+        let price_info = price_info::get_price_info_from_price_info_object(price_info_object);
+        let price_id = price_identifier::get_bytes(&price_info::get_price_identifier(&price_info));
+
+        assert!(price_id!=x"c7b72e5d860034288c9335d4d325da4272fe50c92ab72249d58f6cbba30e4c44", ERR_INVALID_PRICE_ID);
+    
+        let price_i64 = price::get_price(&price_struct);
+
+        if (i64::get_is_negative(&price_i64) == false) {
+            let final_price: u64 = i64::get_magnitude_if_positive(&price_i64)/10000;
+            pool.current_price = final_price;
+            pool.last_update_price_timestamp = clock::timestamp_ms(clock);
+        };
+        
+    }
+
     // ======== Only Governance =========
 
     // Allows admin to register a new lending pool
@@ -845,7 +878,9 @@ module omneon::lending {
             total_borrows: 0,
             current_borrow_rate: 0,
             current_supply_rate: 0,
-            override_price: 10000,
+            current_price: 10000,
+            is_invert: false,
+            last_update_price_timestamp: 0,
             debt_positions: table::new<address, DebtPosition>(ctx),
             total_collateral: 0,
             total_supply: 0
@@ -905,10 +940,13 @@ module omneon::lending {
         pool.has_paused = is_pause;
     }
 
-    public entry fun update_override_price<X,Y>(global: &mut LendingGlobal, _admin_cap: &mut AdminCap, override_price: u64) {
+    public entry fun update_override_price<X,Y>(global: &mut LendingGlobal, _admin_cap: &mut AdminCap, override_price: u64, is_invert:  bool) {
         let pool = get_mut_pool<X, Y>(global);
-        pool.override_price = override_price;
+        pool.current_price = override_price;
+        pool.is_invert = is_invert;
     }
+
+  
 
     // ======== Internal Functions =========
 
@@ -1042,7 +1080,11 @@ module omneon::lending {
     }
 
     fun get_collateral_value_in_x<X, Y>(pool: &POOL<X, Y>, collateral_amount: u64): u64 {
-        ((((pool.override_price as u128) * (collateral_amount as u128)) / 10000) as u64)
+        if (pool.is_invert == false) {
+            ((((pool.current_price as u128) * (collateral_amount as u128)) / 10000) as u64)
+        } else {
+            (((10000 * (collateral_amount as u128)) / (pool.current_price as u128)) as u64)
+        }
     }
  
     fun get_debt_with_interest<X,Y>(pool: &POOL<X, Y>, borrower_address: address, ctx: &TxContext) : (u64, u64, u64) {

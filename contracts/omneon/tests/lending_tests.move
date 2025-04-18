@@ -7,6 +7,7 @@ module omneon::lending_tests {
     use iota::test_scenario::{Self, Scenario, next_tx, ctx, end};
     use iota::iota::IOTA;
     use iota::tx_context::{Self};
+    
 
     use omneon::lending::{Self, LendingGlobal, AdminCap, SHARE};
 
@@ -242,7 +243,7 @@ module omneon::lending_tests {
                 ctx(test));
 
             // Update price IOTA/VUSD = 0.1
-            lending::update_override_price<VUSD, IOTA>(&mut global, &mut admincap, 1000 );
+            lending::update_override_price<VUSD, IOTA>(&mut global, &mut admincap, 1000, false );
 
             let pool = lending::get_mut_pool_for_testing<VUSD, IOTA>(&mut global);
 
@@ -280,8 +281,8 @@ module omneon::lending_tests {
                 0, // No cap
                 ctx(test));
 
-            // Update price VUSD/IOTA = 10
-            lending::update_override_price<IOTA, VUSD>(&mut global, &mut admincap, 100000 );
+            // Update price IOTA/VUSD = 0.1
+            lending::update_override_price<IOTA, VUSD>(&mut global, &mut admincap, 1000 , true );
 
             let pool = lending::get_mut_pool_for_testing<IOTA, VUSD>(&mut global);
 
@@ -441,7 +442,7 @@ module omneon::lending_tests {
             let mut admincap = test_scenario::take_from_sender<AdminCap>(test);
 
             // Set override price to 0.15 
-            lending::update_override_price<VUSD, IOTA>( &mut global, &mut admincap, 1500 );
+            lending::update_override_price<VUSD, IOTA>( &mut global, &mut admincap, 1500, false );
 
             test_scenario::return_to_sender(test, admincap);
             test_scenario::return_shared(global);
@@ -510,7 +511,7 @@ module omneon::lending_tests {
             let mut admincap = test_scenario::take_from_sender<AdminCap>(test);
 
             // Set override price to simulate IOTA dropping to 0.03 VUSD
-            lending::update_override_price<VUSD, IOTA>( &mut global, &mut admincap, 300 );
+            lending::update_override_price<VUSD, IOTA>( &mut global, &mut admincap, 300, false );
 
             test_scenario::return_to_sender(test, admincap);
             test_scenario::return_shared(global);

@@ -98,7 +98,7 @@ const WithdrawModal = ({ close, balances, increaseTick, activeMarket }: any) => 
                                 {activeMarket.id === 1 && <>Balance: {balance ? balance.toFixed(4) : 0} Share IOTA</>}
                             </div>
                             <div className="ml-auto">
-                                ~${  activeMarket.id === 0 ? (toUSD("VUSD", amount)).toFixed(2) : (toUSD("IOTA", amount)).toFixed(2) }
+                                ~${  activeMarket.id === 0 ? (toUSD("VUSD", amount)).toFixed(2) : (toUSD("IOTA", amount, activeMarket.currentPrice)).toFixed(2) }
                             </div>
                         </div>
 

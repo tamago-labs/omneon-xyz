@@ -270,7 +270,7 @@ const MarketsContainer = () => {
                                                         style={{ width: `${market.utilizationRate}%` }}
                                                     ></div>
                                                 </div>
-                                                <span>{market.utilizationRate.toFixed(2)}%</span>
+                                                <span className="w-[70px] ">{market.utilizationRate.toFixed(2)}%</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">

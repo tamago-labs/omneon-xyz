@@ -70,7 +70,7 @@ const BorrowModal = ({ close, balances, increaseTick, activeMarket }: any) => {
     let heathFactor = 0
 
     if (borrowAmount > 0 && activeMarket) {
-        const liquidation_threshold_value = collateralAmount * activeMarket.conversionRate * activeMarket.liquidationThreshold
+        const liquidation_threshold_value = collateralAmount * ( activeMarket.id === 0 ? activeMarket.currentPrice : (1/activeMarket.currentPrice) ) * activeMarket.liquidationThreshold
         heathFactor = liquidation_threshold_value / borrowAmount
     }
 
@@ -128,7 +128,7 @@ const BorrowModal = ({ close, balances, increaseTick, activeMarket }: any) => {
                                     dispatch({
                                         collateralAmount: amount,
                                         borrowAmount: 0,
-                                        maxBorrowAmount: amount * activeMarket.conversionRate * activeMarket.ltv
+                                        maxBorrowAmount: amount * ( activeMarket.id === 0 ? activeMarket.currentPrice : (1/activeMarket.currentPrice) ) * activeMarket.ltv
                                     })
                                 }}
                             />
@@ -138,7 +138,7 @@ const BorrowModal = ({ close, balances, increaseTick, activeMarket }: any) => {
                                     dispatch({
                                         collateralAmount: balance ? Number(balance) : 0,
                                         borrowAmount: 0,
-                                        maxBorrowAmount: Number(balance) * activeMarket.conversionRate * activeMarket.ltv
+                                        maxBorrowAmount: Number(balance) * ( activeMarket.id === 0 ? activeMarket.currentPrice : (1/activeMarket.currentPrice) ) * activeMarket.ltv
                                     })
                                 }}
                             >
@@ -150,7 +150,7 @@ const BorrowModal = ({ close, balances, increaseTick, activeMarket }: any) => {
                                 Balance: {balance || 0}{` ${activeMarket.collateral_asset}`}
                             </div>
                             <div className="ml-auto">
-                                ~${activeMarket.id === 1 ? (toUSD("VUSD", collateralAmount)).toFixed(2) : (toUSD("IOTA", collateralAmount)).toFixed(2)}
+                                ~${activeMarket.id === 1 ? (toUSD("VUSD", collateralAmount)).toFixed(2) : (toUSD("IOTA", collateralAmount, activeMarket.currentPrice)).toFixed(2)}
                             </div>
                         </div>
                     </div>

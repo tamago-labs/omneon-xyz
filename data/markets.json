@@ -2,7 +2,7 @@
     {
         "id": 0,
         "borrow_asset": "vUSD",
-        "borrow_asset_type": "0xf1edff043dcda36bcac9d378594c533a796537cbaac03b3ba194995c85f80619::mock_vusd::MOCK_VUSD",
+        "borrow_asset_type": "0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::mock_vusd::MOCK_VUSD",
         "collateral_asset": "IOTA",
         "collateral_asset_type": "0x2::iota::IOTA",
         "image": "./images/vusd-icon.png"
@@ -12,7 +12,7 @@
         "borrow_asset": "IOTA",
         "borrow_asset_type": "0x2::iota::IOTA",
         "collateral_asset": "vUSD",
-        "collateral_asset_type": "0xf1edff043dcda36bcac9d378594c533a796537cbaac03b3ba194995c85f80619::mock_vusd::MOCK_VUSD",
+        "collateral_asset_type": "0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::mock_vusd::MOCK_VUSD",
         "image": "./images/iota-icon.png"
     }
 ]

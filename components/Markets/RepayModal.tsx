@@ -1,6 +1,6 @@
 import { useState, useReducer, useCallback } from "react";
 import { motion } from "framer-motion";
-import { X, Info } from "lucide-react";
+import { X, Info, AlertTriangle } from "lucide-react";
 import useLending from "@/hooks/useLending";
 import { Puff } from 'react-loading-icons'
 import { usePrice } from "@/hooks/usePrice"; 

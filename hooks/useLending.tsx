@@ -1,4 +1,4 @@
-import { IotaClient } from "@iota/iota-sdk/client";
+
 import { Transaction } from "@iota/iota-sdk/transactions";
 import { useIotaClient, useCurrentAccount, useSignAndExecuteTransaction } from '@iota/dapp-kit';
 import { useCallback } from "react";
@@ -6,6 +6,7 @@ import BigNumber from "bignumber.js"
 import COINS from "../data/coins.json"
 import MARKETS from "../data/markets.json"
 import { usePrice } from "./usePrice";
+import { IotaPriceServiceConnection, IotaPythClient } from "@pythnetwork/pyth-iota-js";
 
 const useLending = () => {
 
@@ -45,9 +46,9 @@ const useLending = () => {
         tx.setGasBudget(50000000);
 
         tx.moveCall({
-            target: `0xefb2c53fc575e4e02e0e562139b87e4f454d95e6ec65d8f53acb75093b6b64ef::mock_vusd::mint`,
+            target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::mock_vusd::mint`,
             arguments: [
-                tx.object("0xf6cc156ecdee81e6e9e503da7913c7fe9707d1e8a5f2d96c4f44b63981d98129"),
+                tx.object("0x9d988c1ac6290ea0a0192c54760d6c71039366079ba3928caa665fa6b8707a21"),
                 tx.pure.u64(`${(BigNumber(100).multipliedBy(10 ** 9))}`),
                 tx.pure.address(recipient),
             ],
@@ -75,10 +76,10 @@ const useLending = () => {
             const [coin] = tx.splitCoins(tx.gas, [tx.pure.u64(`${(BigNumber(amount).multipliedBy(10 ** 9))}`)])
 
             tx.moveCall({
-                target: `0xefb2c53fc575e4e02e0e562139b87e4f454d95e6ec65d8f53acb75093b6b64ef::lending::supply`,
+                target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::supply`,
                 typeArguments: [borrow_asset_type, collateral_asset_type],
                 arguments: [
-                    tx.object("0x655cb6076c8d68e98c3c972ed28f1491aa40025a5135039fa101993522446e52"),
+                    tx.object("0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114"),
                     coin
                 ],
             });
@@ -103,10 +104,10 @@ const useLending = () => {
                 if (BigNumber(data[0].balance).eq((BigNumber(amount).multipliedBy(10 ** 9)))) {
 
                     tx.moveCall({
-                        target: `0xefb2c53fc575e4e02e0e562139b87e4f454d95e6ec65d8f53acb75093b6b64ef::lending::supply`,
+                        target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::supply`,
                         typeArguments: [borrow_asset_type, collateral_asset_type],
                         arguments: [
-                            tx.object("0x655cb6076c8d68e98c3c972ed28f1491aa40025a5135039fa101993522446e52"),
+                            tx.object("0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114"),
                             tx.object(coinToBuy)
                         ],
                     });
@@ -125,10 +126,10 @@ const useLending = () => {
 
                     const [splited_coin] = tx.splitCoins(coinToBuy, [`${(BigNumber(amount)).multipliedBy(BigNumber(10 ** 9))}`])
                     tx.moveCall({
-                        target: `0xefb2c53fc575e4e02e0e562139b87e4f454d95e6ec65d8f53acb75093b6b64ef::lending::supply`,
+                        target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::supply`,
                         typeArguments: [borrow_asset_type, collateral_asset_type],
                         arguments: [
-                            tx.object("0x655cb6076c8d68e98c3c972ed28f1491aa40025a5135039fa101993522446e52"),
+                            tx.object("0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114"),
                             splited_coin
                         ],
                     });
@@ -155,7 +156,7 @@ const useLending = () => {
 
         const { data } = await client.getCoins({
             owner: currentAccount.address,
-            coinType: `0xefb2c53fc575e4e02e0e562139b87e4f454d95e6ec65d8f53acb75093b6b64ef::lending::SHARE<${borrow_asset_type}, ${collateral_asset_type}>`
+            coinType: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::SHARE<${borrow_asset_type}, ${collateral_asset_type}>`
         })
 
         const coinToBuy = data && data[0] && data[0].coinObjectId
@@ -166,10 +167,10 @@ const useLending = () => {
             if (BigNumber(data[0].balance).eq((BigNumber(amount).multipliedBy(10 ** 9)))) {
 
                 tx.moveCall({
-                    target: `0xefb2c53fc575e4e02e0e562139b87e4f454d95e6ec65d8f53acb75093b6b64ef::lending::withdraw`,
+                    target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::withdraw`,
                     typeArguments: [borrow_asset_type, collateral_asset_type],
                     arguments: [
-                        tx.object("0x655cb6076c8d68e98c3c972ed28f1491aa40025a5135039fa101993522446e52"),
+                        tx.object("0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114"),
                         tx.object(coinToBuy)
                     ],
                 });
@@ -188,10 +189,10 @@ const useLending = () => {
 
                 const [splited_coin] = tx.splitCoins(coinToBuy, [`${(BigNumber(amount)).multipliedBy(BigNumber(10 ** 9))}`])
                 tx.moveCall({
-                    target: `0xefb2c53fc575e4e02e0e562139b87e4f454d95e6ec65d8f53acb75093b6b64ef::lending::withdraw`,
+                    target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::withdraw`,
                     typeArguments: [borrow_asset_type, collateral_asset_type],
                     arguments: [
-                        tx.object("0x655cb6076c8d68e98c3c972ed28f1491aa40025a5135039fa101993522446e52"),
+                        tx.object("0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114"),
                         splited_coin
                     ],
                 });
@@ -227,7 +228,7 @@ const useLending = () => {
     const loadPools = useCallback(async (borrower_address: string | null) => {
 
         const { data } = await client.getObject({
-            id: "0x655cb6076c8d68e98c3c972ed28f1491aa40025a5135039fa101993522446e52",
+            id: "0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114",
             options: {
                 "showType": false,
                 "showOwner": false,
@@ -301,7 +302,7 @@ const useLending = () => {
                 totalSupply,
                 totalBorrow,
                 liquidity,
-                utilizationRate: utilizationRatio*100
+                utilizationRate: utilizationRatio * 100
             })
 
             count = count + 1
@@ -325,10 +326,10 @@ const useLending = () => {
             const [coin] = tx.splitCoins(tx.gas, [tx.pure.u64(`${(BigNumber(collateral_amount).multipliedBy(10 ** 9))}`)])
 
             tx.moveCall({
-                target: `0xefb2c53fc575e4e02e0e562139b87e4f454d95e6ec65d8f53acb75093b6b64ef::lending::borrow`,
+                target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::borrow`,
                 typeArguments: [borrow_asset_type, collateral_asset_type],
                 arguments: [
-                    tx.object("0x655cb6076c8d68e98c3c972ed28f1491aa40025a5135039fa101993522446e52"),
+                    tx.object("0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114"),
                     coin,
                     tx.pure.u64(`${(BigNumber(borrow_amount).multipliedBy(10 ** 9))}`)
                 ],
@@ -353,10 +354,10 @@ const useLending = () => {
                 if (BigNumber(data[0].balance).eq((BigNumber(collateral_amount).multipliedBy(10 ** 9)))) {
 
                     tx.moveCall({
-                        target: `0xefb2c53fc575e4e02e0e562139b87e4f454d95e6ec65d8f53acb75093b6b64ef::lending::borrow`,
+                        target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::borrow`,
                         typeArguments: [borrow_asset_type, collateral_asset_type],
                         arguments: [
-                            tx.object("0x655cb6076c8d68e98c3c972ed28f1491aa40025a5135039fa101993522446e52"),
+                            tx.object("0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114"),
                             tx.object(coinToBuy),
                             tx.pure.u64(`${(BigNumber(borrow_amount).multipliedBy(10 ** 9))}`)
                         ],
@@ -376,10 +377,10 @@ const useLending = () => {
 
                     const [splited_coin] = tx.splitCoins(coinToBuy, [`${(BigNumber(collateral_amount)).multipliedBy(BigNumber(10 ** 9))}`])
                     tx.moveCall({
-                        target: `0xefb2c53fc575e4e02e0e562139b87e4f454d95e6ec65d8f53acb75093b6b64ef::lending::borrow`,
+                        target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::borrow`,
                         typeArguments: [borrow_asset_type, collateral_asset_type],
                         arguments: [
-                            tx.object("0x655cb6076c8d68e98c3c972ed28f1491aa40025a5135039fa101993522446e52"),
+                            tx.object("0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114"),
                             splited_coin,
                             tx.pure.u64(`${(BigNumber(borrow_amount).multipliedBy(10 ** 9))}`)
                         ],
@@ -401,9 +402,80 @@ const useLending = () => {
         return (Number(input) / 10 ** decimals)
     }
 
+    const updateCurrentPrice = useCallback(async (borrow_asset_type: string, collateral_asset_type: string) => {
+
+        if (!currentAccount) {
+            return
+        }
+
+        const connection = new IotaPriceServiceConnection("https://hermes.pyth.network");
+
+        const priceIDs = [
+            "c7b72e5d860034288c9335d4d325da4272fe50c92ab72249d58f6cbba30e4c44", // IOTA/USD price ID
+        ];
+ 
+        const wormholeStateId = "0x8bc490f69520a97ca1b3de864c96aa2265a0cf5d90f5f3f016b2eddf0cf2af2b";
+        const pythStateId = "0x68dda579251917b3db28e35c4df495c6e664ccc085ede867a9b773c8ebedc2c1";
+
+        const iotaClient: any = client
+        const pythClient = new IotaPythClient(iotaClient, pythStateId, wormholeStateId);
+        const tx: any = new Transaction();
+        tx.setGasBudget(50000000);
+
+        const newFeeds = [];
+        const existingFeeds = [];
+        for (const feed of priceIDs) {
+            if ((await pythClient.getPriceFeedObjectId(feed)) == undefined) {
+                newFeeds.push(feed);
+            } else {
+                existingFeeds.push(feed);
+            }
+        }
+        console.log({
+            newFeeds,
+            existingFeeds,
+        });
+
+        if (existingFeeds.length > 0) {
+            const updateData = await connection.getPriceFeedsUpdateData(existingFeeds);
+            const priceInfoObjectIds = await pythClient.updatePriceFeeds(tx, updateData, existingFeeds);
+            console.log("priceInfoObjectIds#1: ", priceInfoObjectIds)
+
+            tx.moveCall({
+                target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::update_current_price`,
+                typeArguments: [borrow_asset_type, collateral_asset_type],
+                arguments: [
+                    tx.object("0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114"),
+                    tx.object("0x6"),
+                    tx.object(priceInfoObjectIds[0])
+                ],
+            });
+
+            const params = {
+                transaction: tx
+            }
+            await signWallet(params);
+
+        }
+        if (newFeeds.length > 0) {
+            // Create an object this time
+            const updateData = await connection.getPriceFeedsUpdateData(newFeeds);
+            await pythClient.createPriceFeed(tx, updateData);
+
+            const params = {
+                transaction: tx
+            }
+            await signWallet(params);
+
+        }
+
+
+    }, [currentAccount, client])
+
     return {
         faucet,
         loadPools,
+        updateCurrentPrice,
         fetchBalances,
         supply,
         withdraw,

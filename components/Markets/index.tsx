@@ -10,82 +10,7 @@ import SupplyModal from './SupplyModal';
 import WithdrawModal from './WithdrawModal';
 import Link from 'next/link';
 import BorrowModal from './BorrowModal';
-
-// Mock data for demonstration
-const marketDataConfig = [
-    {
-        id: 1,
-        name: 'IOTA',
-        image: "./images/iota-icon.png",
-        icon: '🔷',
-        supplyApy: 2.34,
-        borrowApr: 3.78,
-        totalSupply: 5460000,
-        liquidity: 1250000,
-        utilizationRate: 77,
-        ltv: 75,
-        wallet: 125.5,
-        supplied: 50.0,
-        borrowed: 0,
-    },
-    {
-        id: 0,
-        name: 'vUSD',
-        image: "./images/vusd-icon.png",
-        icon: '💵',
-        supplyApy: 4.21,
-        borrowApr: 5.67,
-        totalSupply: 12500000,
-        liquidity: 3450000,
-        utilizationRate: 72,
-        ltv: 80,
-        wallet: 500.0,
-        supplied: 0,
-        borrowed: 200.0,
-    },
-    // {
-    //     id: 'eth',
-    //     name: 'ETH',
-    //     icon: '⬙',
-    //     supplyApy: 1.12,
-    //     borrowApr: 2.45,
-    //     totalSupply: 8950000,
-    //     liquidity: 1750000,
-    //     utilizationRate: 80,
-    //     ltv: 70,
-    //     wallet: 0.5,
-    //     supplied: 0,
-    //     borrowed: 0,
-    // },
-    // {
-    //     id: 'btc',
-    //     name: 'BTC',
-    //     icon: '₿',
-    //     supplyApy: 0.89,
-    //     borrowApr: 2.11,
-    //     totalSupply: 15780000,
-    //     liquidity: 4230000,
-    //     utilizationRate: 73,
-    //     ltv: 65,
-    //     wallet: 0.02,
-    //     supplied: 0,
-    //     borrowed: 0,
-    // },
-    // {
-    //     id: 'dai',
-    //     name: 'DAI',
-    //     icon: '◈',
-    //     supplyApy: 3.98,
-    //     borrowApr: 5.12,
-    //     totalSupply: 9870000,
-    //     liquidity: 2340000,
-    //     utilizationRate: 76,
-    //     ltv: 80,
-    //     wallet: 750.25,
-    //     supplied: 0,
-    //     borrowed: 0,
-    // }
-];
+ 
 
 enum Modal {
     None,
@@ -97,7 +22,7 @@ enum Modal {
 
 const MarketsContainer = () => {
 
-    const { fetchBalances, loadPools } = useLending()
+    const { fetchBalances, loadPools, updateCurrentPrice } = useLending()
 
     const account = useCurrentAccount()
     const address = account && account.address
@@ -204,6 +129,17 @@ const MarketsContainer = () => {
     };
 
     console.log("markets: ", markets)
+
+    const onUpdatePrice = useCallback(async (activeMarket: any) => {
+
+        try {
+            await updateCurrentPrice(activeMarket.borrow_asset_type, activeMarket.collateral_asset_type)
+        } catch (error: any) {
+            console.log(error) 
+        }
+
+    }, [ updateCurrentPrice ])
+
 
     return (
         <div className="min-h-screen text-white">
@@ -378,6 +314,12 @@ const MarketsContainer = () => {
                                                         Repay
                                                     </button>
                                                 )}
+                                                { (address && address === "0xe1e2cdde45fcf8fd38577e9da260dc6a6d542569560faf963e1f3e38a1a285c0") && (
+                                                    <button onClick={() => onUpdatePrice(market)} className="px-3 py-1 cursor-pointer bg-teal-700 hover:bg-teal-600 rounded-md text-sm transition-colors">
+                                                        Update Price
+                                                    </button>
+                                                )}
+
                                             </div>
                                         </td>
                                     </motion.tr>

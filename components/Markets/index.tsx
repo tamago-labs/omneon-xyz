@@ -10,14 +10,16 @@ import SupplyModal from './SupplyModal';
 import WithdrawModal from './WithdrawModal';
 import Link from 'next/link';
 import BorrowModal from './BorrowModal';
- 
+import RepayModal from "./RepayModal"
+
 
 enum Modal {
     None,
     Faucet,
     Supply,
     Withdraw,
-    Borrow
+    Borrow,
+    Repay
 }
 
 const MarketsContainer = () => {
@@ -135,10 +137,10 @@ const MarketsContainer = () => {
         try {
             await updateCurrentPrice(activeMarket.borrow_asset_type, activeMarket.collateral_asset_type)
         } catch (error: any) {
-            console.log(error) 
+            console.log(error)
         }
 
-    }, [ updateCurrentPrice ])
+    }, [updateCurrentPrice])
 
 
     return (
@@ -148,6 +150,8 @@ const MarketsContainer = () => {
             {(modal === Modal.Supply && activeMarket) && <SupplyModal balances={balances} activeMarket={activeMarket} increaseTick={increaseTick} close={() => setModal(Modal.None)} />}
             {(modal === Modal.Withdraw && activeMarket) && <WithdrawModal balances={balances} activeMarket={activeMarket} increaseTick={increaseTick} close={() => setModal(Modal.None)} />}
             {(modal === Modal.Borrow && activeMarket) && <BorrowModal balances={balances} activeMarket={activeMarket} increaseTick={increaseTick} close={() => setModal(Modal.None)} />}
+            {(modal === Modal.Repay && activeMarket) && <RepayModal balances={balances} activeMarket={activeMarket} increaseTick={increaseTick} close={() => setModal(Modal.None)} />}
+
 
             <div className="container mx-auto  ">
                 <h1 className="text-3xl font-bold mb-2">Markets</h1>
@@ -212,7 +216,7 @@ const MarketsContainer = () => {
                                     >
                                         Utilization {getSortIndicator('utilizationRate')}
                                     </th>
-                                    <th className="px-6 py-4 text-right">Your Wallet</th>
+                                    <th className="px-6 py-4 text-right">Your Position</th>
                                     <th className="px-6 py-4"></th>
                                 </tr>
                             </thead>
@@ -232,14 +236,14 @@ const MarketsContainer = () => {
                                                 <div>
                                                     <div className="font-medium">{market.borrow_asset}</div>
                                                     <div className="text-xs text-gray-400">
-                                                        {market.supplied > 0 && (
+                                                        {balances && balances[market.id + 2] > 0 && (
                                                             <span className="mr-2 text-green-400">
-                                                                {market.supplied} Supplied
+                                                                {Number(balances[market.id + 2]).toFixed(0)} Supplied
                                                             </span>
                                                         )}
-                                                        {market.borrowed > 0 && (
+                                                        {market?.activePosition?.borrowAmount > 0 && (
                                                             <span className="text-red-400">
-                                                                {market.borrowed} Borrowed
+                                                                {market.activePosition.borrowAmount} Borrowed
                                                             </span>
                                                         )}
                                                     </div>
@@ -274,7 +278,32 @@ const MarketsContainer = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            {/* {formatNumber(market.wallet)} */}
+                                            <div className="flex items-center justify-end">
+                                                {market?.activePosition?.borrowAmount > 0 ? (
+                                                    <>
+                                                        <div className="w-16 bg-gray-700 rounded-full h-2 mr-2">
+                                                            <div
+                                                                className={`h-2 rounded-full ${market.activePosition.healthFactor >= 2 ? 'bg-green-500' :
+                                                                        market.activePosition.healthFactor >= 1.5 ? 'bg-blue-500' :
+                                                                            market.activePosition.healthFactor >= 1.2 ? 'bg-yellow-500' : 'bg-red-500'
+                                                                    }`}
+                                                                style={{
+                                                                    // Cap at 100% width, with 3.0 being full width
+                                                                    width: `${Math.min(100, (market.activePosition.healthFactor / 3) * 100)}%`
+                                                                }}
+                                                            ></div>
+                                                        </div>
+                                                        <span className={`w-[70px] ${market.activePosition.healthFactor >= 2 ? 'text-green-500' :
+                                                                market.activePosition.healthFactor >= 1.5 ? 'text-blue-500' :
+                                                                    market.activePosition.healthFactor >= 1.2 ? 'text-yellow-500' : 'text-red-500'
+                                                            }`}>
+                                                            {market.activePosition.healthFactor.toFixed(2)}
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-gray-400 text-sm italic">No debt position</span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex space-x-2 justify-end">
@@ -299,22 +328,37 @@ const MarketsContainer = () => {
                                                         Withdraw
                                                     </button>
                                                 )}
-                                                <button
-                                                    onClick={() => {
-                                                        dispatch({
-                                                            activeMarket: market
-                                                        })
-                                                        setModal(Modal.Borrow)
-                                                    }}
-                                                    className="px-3 cursor-pointer py-1 bg-purple-600 hover:bg-purple-700 rounded-md text-sm transition-colors">
-                                                    Borrow
-                                                </button>
-                                                {market.borrowed > 0 && (
-                                                    <button className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-md text-sm transition-colors">
+                                                {!market?.activePosition?.borrowAmount && (
+                                                    <button
+                                                        onClick={() => {
+                                                            dispatch({
+                                                                activeMarket: market
+                                                            })
+                                                            setModal(Modal.Borrow)
+                                                        }}
+                                                        className="px-3 cursor-pointer py-1 bg-purple-600 hover:bg-purple-700 rounded-md text-sm transition-colors">
+                                                        Borrow
+                                                    </button>
+                                                )}
+                                                {market?.activePosition?.borrowAmount > 0 && (
+                                                    <button
+                                                        onClick={() => {
+                                                            dispatch({
+                                                                activeMarket: market
+                                                            })
+                                                            setModal(Modal.Repay)
+                                                        }}
+                                                        className="px-3 cursor-pointer py-1 bg-gray-700 hover:bg-gray-600 rounded-md text-sm transition-colors">
                                                         Repay
                                                     </button>
                                                 )}
-                                                { (address && address === "0xe1e2cdde45fcf8fd38577e9da260dc6a6d542569560faf963e1f3e38a1a285c0") && (
+
+                                                {/* {market.borrowed > 0 && (
+                                                    <button className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-md text-sm transition-colors">
+                                                        Repay
+                                                    </button>
+                                                )}*/}
+                                                {(address && address === "0xe1e2cdde45fcf8fd38577e9da260dc6a6d542569560faf963e1f3e38a1a285c0") && (
                                                     <button onClick={() => onUpdatePrice(market)} className="px-3 py-1 cursor-pointer bg-teal-700 hover:bg-teal-600 rounded-md text-sm transition-colors">
                                                         Update Price
                                                     </button>

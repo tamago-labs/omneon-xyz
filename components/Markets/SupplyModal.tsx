@@ -108,7 +108,7 @@ const SupplyModal = ({ close, balances, increaseTick, activeMarket }: any) => {
                     <div className="bg-gray-700/50 rounded-lg p-4 mb-6 space-y-2">
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-400">Supply APY</span>
-                            {/* <span className="text-white">{supplyApy || 0}%</span> */}
+                             <span className="text-white">{activeMarket?.supplyRate || 0}%</span> 
                         </div>
                         {/* <div className="flex justify-between text-sm">
                             <span className="text-gray-400">Distribution APY</span> 

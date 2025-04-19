@@ -274,15 +274,13 @@ const useLending = () => {
 
             console.log("fields:", fields)
 
-            if (borrower_address) {
-                // add debt position
-            }
+
 
             let totalSupply = 0
             let totalBorrow = 0
 
-            const currentPrice = Number(fields.current_price) / 10000 
-            const market = fields.share_supply.type === "0x2::balance::Supply<0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::lending::SHARE<0x2::iota::IOTA, 0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::mock_vusd::MOCK_VUSD>>" ? MARKETS[1] : MARKETS[0] 
+            const currentPrice = Number(fields.current_price) / 10000
+            const market = fields.share_supply.type === "0x2::balance::Supply<0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::lending::SHARE<0x2::iota::IOTA, 0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::mock_vusd::MOCK_VUSD>>" ? MARKETS[1] : MARKETS[0]
 
 
             if (market.id === 0) {
@@ -296,17 +294,75 @@ const useLending = () => {
             const liquidity = totalSupply - totalBorrow
             const utilizationRatio = totalSupply > 0 ? totalBorrow / totalSupply : 0
 
+            let activePosition = undefined
+
+            if (borrower_address) {
+                // add debt position 
+                const tableId = fields.debt_positions.fields.id.id
+                const dynamicFieldPage = await client.getDynamicFields({ parentId: tableId })
+                const thisPosition: any = dynamicFieldPage.data.find((item: any) => item.name.value === borrower_address)
+
+                if (thisPosition) {
+                    const userPosition: any = await client.getObject({
+                        id: thisPosition.objectId,
+                        options: {
+                            "showType": false,
+                            "showOwner": false,
+                            "showPreviousTransaction": false,
+                            "showDisplay": false,
+                            "showContent": true,
+                            "showBcs": false,
+                            "showStorageRebate": false
+                        }
+                    })
+                    const userFields = userPosition.data.content.fields.value.fields
+
+                    const collateralAmount = Number(`${(BigNumber(userFields.collateral_amount).dividedBy(10 ** 9))}`)
+                    let collateralValue = 0
+                    let borrowValue = 0
+                    if (market.id === 0) {
+                        collateralValue = toUSD("IOTA", Number(`${(BigNumber(userFields.collateral_amount).dividedBy(10 ** 9))}`), currentPrice)
+                        borrowValue = toUSD("VUSD", Number(`${(BigNumber(userFields.debt_amount).dividedBy(10 ** 9))}`), currentPrice)
+                    } else if (market.id === 1) {
+                        collateralValue = toUSD("VUSD", Number(`${(BigNumber(userFields.collateral_amount).dividedBy(10 ** 9))}`), currentPrice)
+                        borrowValue = toUSD("IOTA", Number(`${(BigNumber(userFields.debt_amount).dividedBy(10 ** 9))}`), currentPrice)
+                    }
+                    const borrowRate = Number(userFields.borrow_rate_snapshot) / 100
+                    const borrowAmount = Number(`${(BigNumber(userFields.debt_amount).dividedBy(10 ** 9))}`)
+                    const liquidationThreshold = Number(userFields.liquidation_threshold_snapshot) / 10000
+
+                    const liquidationThresholdValue = collateralValue * liquidationThreshold
+                    const healthFactor = liquidationThresholdValue / borrowValue
+
+                    activePosition = {
+                        borrowRate,
+                        borrowAmount,
+                        borrowValue,
+                        collateralValue,
+                        collateralAmount,
+                        liquidationThreshold,
+                        healthFactor
+                    }
+
+                    // console.log("userFields :", userFields)
+                    // console.log("activePosition :", activePosition)
+
+                }
+
+            }
+
             output.push({
                 ...market,
                 ltv: Number(fields.ltv) / 10000,
-                liquidationThreshold: Number(fields.liquidation_threshold) / 10000, 
+                liquidationThreshold: Number(fields.liquidation_threshold) / 10000,
                 borrowRate: Number(fields.current_borrow_rate) / 100,
                 supplyRate: Number(fields.current_supply_rate) / 100,
                 totalSupply,
                 totalBorrow,
                 liquidity,
                 utilizationRate: utilizationRatio * 100,
-                currentPrice
+                currentPrice,
+                activePosition
             })
 
             count = count + 1
@@ -402,6 +458,87 @@ const useLending = () => {
 
     }, [currentAccount, client])
 
+    const repay = useCallback(async (borrow_amount: number, borrow_asset_type: string, collateral_asset_type: string) => {
+
+        if (!currentAccount) {
+            return
+        }
+
+        const tx = new Transaction();
+        tx.setGasBudget(50000000);
+
+        const { data } = await client.getCoins({
+            owner: currentAccount.address,
+            coinType: borrow_asset_type
+        })
+
+        const coinToBuy = data && data[0] && data[0].coinObjectId
+
+        if (coinToBuy) {
+
+            const totalBalance = data.reduce((sum, coin) => sum.plus(new BigNumber(coin.balance)), new BigNumber(0)).toString();
+
+            console.log("total balance :", totalBalance)
+
+            if (borrow_asset_type === "0x2::iota::IOTA") {
+
+                const [coin] = tx.splitCoins(tx.gas, [tx.pure.u64(`${(BigNumber((borrow_amount * 1.15).toFixed(0)).multipliedBy(10 ** 9))}`)])
+
+                tx.moveCall({
+                    target: `0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::lending::repay`,
+                    typeArguments: [borrow_asset_type, collateral_asset_type],
+                    arguments: [
+                        tx.object("0x1b48d0219088beb4bace0f978c0b88ff84d88891ba5dc419aade04e40f4b3c87"),
+                        coin,
+                        tx.pure.bool(true)
+                    ],
+                });
+                const params = {
+                    transaction: tx
+                }
+                return await signWallet(params);
+            } else {
+                if (data.length >= 2) {
+                    const baseId = data[0].coinObjectId
+                    const remainingIds = data.filter((item: any, index: number) => index !== 0).map((item: any) => item.coinObjectId)
+                    tx.mergeCoins(baseId, remainingIds)
+                }
+
+                tx.moveCall({
+                    target: `0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::lending::repay`,
+                    typeArguments: [borrow_asset_type, collateral_asset_type],
+                    arguments: [
+                        tx.object("0x1b48d0219088beb4bace0f978c0b88ff84d88891ba5dc419aade04e40f4b3c87"),
+                        tx.object(coinToBuy),
+                        tx.pure.bool(true)
+                    ],
+                });
+                const params = {
+                    transaction: tx
+                }
+                return await signWallet(params);
+            }
+
+            tx.moveCall({
+                target: `0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::lending::repay`,
+                typeArguments: [borrow_asset_type, collateral_asset_type],
+                arguments: [
+                    tx.object("0x1b48d0219088beb4bace0f978c0b88ff84d88891ba5dc419aade04e40f4b3c87"),
+                    tx.object(coinToBuy),
+                    tx.pure.bool(true)
+                ],
+            });
+            const params = {
+                transaction: tx
+            }
+            return await signWallet(params);
+
+        } else {
+            return undefined
+        }
+
+    }, [currentAccount, client])
+
     const parseAmount = (input: any, decimals: number) => {
         return (Number(input) / 10 ** decimals)
     }
@@ -417,7 +554,7 @@ const useLending = () => {
         const priceIDs = [
             "c7b72e5d860034288c9335d4d325da4272fe50c92ab72249d58f6cbba30e4c44", // IOTA/USD price ID
         ];
- 
+
         const wormholeStateId = "0x8bc490f69520a97ca1b3de864c96aa2265a0cf5d90f5f3f016b2eddf0cf2af2b";
         const pythStateId = "0x68dda579251917b3db28e35c4df495c6e664ccc085ede867a9b773c8ebedc2c1";
 
@@ -483,7 +620,8 @@ const useLending = () => {
         fetchBalances,
         supply,
         withdraw,
-        borrow
+        borrow,
+        repay
     }
 }
 

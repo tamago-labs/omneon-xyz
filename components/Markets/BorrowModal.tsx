@@ -70,10 +70,9 @@ const BorrowModal = ({ close, balances, increaseTick, activeMarket }: any) => {
     let heathFactor = 0
 
     if (borrowAmount > 0 && activeMarket) {
-        const liquidation_threshold_value = collateralAmount * ( activeMarket.id === 0 ? activeMarket.currentPrice : (1/activeMarket.currentPrice) ) * activeMarket.liquidationThreshold
+        const liquidation_threshold_value = collateralAmount * (activeMarket.id === 0 ? activeMarket.currentPrice : (1 / activeMarket.currentPrice)) * activeMarket.liquidationThreshold
         heathFactor = liquidation_threshold_value / borrowAmount
     }
-
 
     return (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -128,7 +127,7 @@ const BorrowModal = ({ close, balances, increaseTick, activeMarket }: any) => {
                                     dispatch({
                                         collateralAmount: amount,
                                         borrowAmount: 0,
-                                        maxBorrowAmount: amount * ( activeMarket.id === 0 ? activeMarket.currentPrice : (1/activeMarket.currentPrice) ) * activeMarket.ltv
+                                        maxBorrowAmount: amount * (activeMarket.id === 0 ? activeMarket.currentPrice : (1 / activeMarket.currentPrice)) * activeMarket.ltv
                                     })
                                 }}
                             />
@@ -138,7 +137,7 @@ const BorrowModal = ({ close, balances, increaseTick, activeMarket }: any) => {
                                     dispatch({
                                         collateralAmount: balance ? Number(balance) : 0,
                                         borrowAmount: 0,
-                                        maxBorrowAmount: Number(balance) * ( activeMarket.id === 0 ? activeMarket.currentPrice : (1/activeMarket.currentPrice) ) * activeMarket.ltv
+                                        maxBorrowAmount: Number(balance) * (activeMarket.id === 0 ? activeMarket.currentPrice : (1 / activeMarket.currentPrice)) * activeMarket.ltv
                                     })
                                 }}
                             >
@@ -232,7 +231,7 @@ const BorrowModal = ({ close, balances, increaseTick, activeMarket }: any) => {
                     <div className="bg-gray-700/50 rounded-lg p-4 space-y-2">
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-400">Borrow APR</span>
-                            {/* <span className="text-white">{borrowApy || 0}%</span> */}
+                            <span className="text-white">{activeMarket.borrowRate || 0}%</span>
                         </div>
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-400">Maximum LTV</span>

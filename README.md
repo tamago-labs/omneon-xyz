@@ -8,11 +8,12 @@ TBD
 
 Component Name | ID/Address
 --- | --- 
-Package ID |  0xf1edff043dcda36bcac9d378594c533a796537cbaac03b3ba194995c85f80619
-Lending Global State | 0x5bc95167e8548c9e9c69934cb47c6b7c8d30a9774c0b928fc408069b381d16e0
-Mock vUSD Global State | 0xfe830ab74b205a393207efa66177af9ed069e8cb7cb1806adfd297e1ece43ea8
-Mock vUSD Type | 0xf1edff043dcda36bcac9d378594c533a796537cbaac03b3ba194995c85f80619::mock_vusd::MOCK_VUSD
-AdminCap | 0xd13aa6d48ac26515d7b23856270f5a890d2ccb5de2bb074d39f5d7d7535745ca
+Package ID |  0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64
+Lending Global State | 0x1b48d0219088beb4bace0f978c0b88ff84d88891ba5dc419aade04e40f4b3c87
+Mock vUSD Global State | 0x9bd14ab92d3076d98dff360c08ad5e3b61dabe71889abce36628ee6e0cc28f1c
+Mock vUSD Type | 0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::mock_vusd::MOCK_VUSD
+AdminCap | 0xe7560ac3ea0415ec1913d2046b63df6ba9b104c17b6db3333d8e361146e2a750
+Pyth IOTA/USD Price State | 0x0a728e3d95fd5d26b1ba68f372cbd0162b0e0ea978b87af771b38a188faca142
 
 ## License
 

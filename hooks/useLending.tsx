@@ -46,9 +46,9 @@ const useLending = () => {
         tx.setGasBudget(50000000);
 
         tx.moveCall({
-            target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::mock_vusd::mint`,
+            target: `0xf1edff043dcda36bcac9d378594c533a796537cbaac03b3ba194995c85f80619::mock_vusd::mint`,
             arguments: [
-                tx.object("0x9d988c1ac6290ea0a0192c54760d6c71039366079ba3928caa665fa6b8707a21"),
+                tx.object("0xfe830ab74b205a393207efa66177af9ed069e8cb7cb1806adfd297e1ece43ea8"),
                 tx.pure.u64(`${(BigNumber(100).multipliedBy(10 ** 9))}`),
                 tx.pure.address(recipient),
             ],
@@ -76,10 +76,10 @@ const useLending = () => {
             const [coin] = tx.splitCoins(tx.gas, [tx.pure.u64(`${(BigNumber(amount).multipliedBy(10 ** 9))}`)])
 
             tx.moveCall({
-                target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::supply`,
+                target: `0xf1edff043dcda36bcac9d378594c533a796537cbaac03b3ba194995c85f80619::lending::supply`,
                 typeArguments: [borrow_asset_type, collateral_asset_type],
                 arguments: [
-                    tx.object("0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114"),
+                    tx.object("0x5bc95167e8548c9e9c69934cb47c6b7c8d30a9774c0b928fc408069b381d16e0"),
                     coin
                 ],
             });
@@ -104,10 +104,10 @@ const useLending = () => {
                 if (BigNumber(data[0].balance).eq((BigNumber(amount).multipliedBy(10 ** 9)))) {
 
                     tx.moveCall({
-                        target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::supply`,
+                        target: `0xf1edff043dcda36bcac9d378594c533a796537cbaac03b3ba194995c85f80619::lending::supply`,
                         typeArguments: [borrow_asset_type, collateral_asset_type],
                         arguments: [
-                            tx.object("0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114"),
+                            tx.object("0x5bc95167e8548c9e9c69934cb47c6b7c8d30a9774c0b928fc408069b381d16e0"),
                             tx.object(coinToBuy)
                         ],
                     });
@@ -126,10 +126,10 @@ const useLending = () => {
 
                     const [splited_coin] = tx.splitCoins(coinToBuy, [`${(BigNumber(amount)).multipliedBy(BigNumber(10 ** 9))}`])
                     tx.moveCall({
-                        target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::supply`,
+                        target: `0xf1edff043dcda36bcac9d378594c533a796537cbaac03b3ba194995c85f80619::lending::supply`,
                         typeArguments: [borrow_asset_type, collateral_asset_type],
                         arguments: [
-                            tx.object("0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114"),
+                            tx.object("0x5bc95167e8548c9e9c69934cb47c6b7c8d30a9774c0b928fc408069b381d16e0"),
                             splited_coin
                         ],
                     });
@@ -156,7 +156,7 @@ const useLending = () => {
 
         const { data } = await client.getCoins({
             owner: currentAccount.address,
-            coinType: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::SHARE<${borrow_asset_type}, ${collateral_asset_type}>`
+            coinType: `0xf1edff043dcda36bcac9d378594c533a796537cbaac03b3ba194995c85f80619::lending::SHARE<${borrow_asset_type}, ${collateral_asset_type}>`
         })
 
         const coinToBuy = data && data[0] && data[0].coinObjectId
@@ -167,10 +167,10 @@ const useLending = () => {
             if (BigNumber(data[0].balance).eq((BigNumber(amount).multipliedBy(10 ** 9)))) {
 
                 tx.moveCall({
-                    target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::withdraw`,
+                    target: `0xf1edff043dcda36bcac9d378594c533a796537cbaac03b3ba194995c85f80619::lending::withdraw`,
                     typeArguments: [borrow_asset_type, collateral_asset_type],
                     arguments: [
-                        tx.object("0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114"),
+                        tx.object("0x5bc95167e8548c9e9c69934cb47c6b7c8d30a9774c0b928fc408069b381d16e0"),
                         tx.object(coinToBuy)
                     ],
                 });
@@ -189,10 +189,10 @@ const useLending = () => {
 
                 const [splited_coin] = tx.splitCoins(coinToBuy, [`${(BigNumber(amount)).multipliedBy(BigNumber(10 ** 9))}`])
                 tx.moveCall({
-                    target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::withdraw`,
+                    target: `0xf1edff043dcda36bcac9d378594c533a796537cbaac03b3ba194995c85f80619::lending::withdraw`,
                     typeArguments: [borrow_asset_type, collateral_asset_type],
                     arguments: [
-                        tx.object("0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114"),
+                        tx.object("0x5bc95167e8548c9e9c69934cb47c6b7c8d30a9774c0b928fc408069b381d16e0"),
                         splited_coin
                     ],
                 });
@@ -228,7 +228,7 @@ const useLending = () => {
     const loadPools = useCallback(async (borrower_address: string | null) => {
 
         const { data } = await client.getObject({
-            id: "0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114",
+            id: "0x5bc95167e8548c9e9c69934cb47c6b7c8d30a9774c0b928fc408069b381d16e0",
             options: {
                 "showType": false,
                 "showOwner": false,
@@ -326,10 +326,10 @@ const useLending = () => {
             const [coin] = tx.splitCoins(tx.gas, [tx.pure.u64(`${(BigNumber(collateral_amount).multipliedBy(10 ** 9))}`)])
 
             tx.moveCall({
-                target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::borrow`,
+                target: `0xf1edff043dcda36bcac9d378594c533a796537cbaac03b3ba194995c85f80619::lending::borrow`,
                 typeArguments: [borrow_asset_type, collateral_asset_type],
                 arguments: [
-                    tx.object("0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114"),
+                    tx.object("0x5bc95167e8548c9e9c69934cb47c6b7c8d30a9774c0b928fc408069b381d16e0"),
                     coin,
                     tx.pure.u64(`${(BigNumber(borrow_amount).multipliedBy(10 ** 9))}`)
                 ],
@@ -354,10 +354,10 @@ const useLending = () => {
                 if (BigNumber(data[0].balance).eq((BigNumber(collateral_amount).multipliedBy(10 ** 9)))) {
 
                     tx.moveCall({
-                        target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::borrow`,
+                        target: `0xf1edff043dcda36bcac9d378594c533a796537cbaac03b3ba194995c85f80619::lending::borrow`,
                         typeArguments: [borrow_asset_type, collateral_asset_type],
                         arguments: [
-                            tx.object("0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114"),
+                            tx.object("0x5bc95167e8548c9e9c69934cb47c6b7c8d30a9774c0b928fc408069b381d16e0"),
                             tx.object(coinToBuy),
                             tx.pure.u64(`${(BigNumber(borrow_amount).multipliedBy(10 ** 9))}`)
                         ],
@@ -377,10 +377,10 @@ const useLending = () => {
 
                     const [splited_coin] = tx.splitCoins(coinToBuy, [`${(BigNumber(collateral_amount)).multipliedBy(BigNumber(10 ** 9))}`])
                     tx.moveCall({
-                        target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::borrow`,
+                        target: `0xf1edff043dcda36bcac9d378594c533a796537cbaac03b3ba194995c85f80619::lending::borrow`,
                         typeArguments: [borrow_asset_type, collateral_asset_type],
                         arguments: [
-                            tx.object("0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114"),
+                            tx.object("0x5bc95167e8548c9e9c69934cb47c6b7c8d30a9774c0b928fc408069b381d16e0"),
                             splited_coin,
                             tx.pure.u64(`${(BigNumber(borrow_amount).multipliedBy(10 ** 9))}`)
                         ],
@@ -442,10 +442,10 @@ const useLending = () => {
             console.log("priceInfoObjectIds#1: ", priceInfoObjectIds)
 
             tx.moveCall({
-                target: `0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::update_current_price`,
+                target: `0xf1edff043dcda36bcac9d378594c533a796537cbaac03b3ba194995c85f80619::lending::update_current_price`,
                 typeArguments: [borrow_asset_type, collateral_asset_type],
                 arguments: [
-                    tx.object("0xe6d05de1fd9e56b68e95eafc6fe06d9bdd7171d1be18f634745aca2ed942b114"),
+                    tx.object("0x5bc95167e8548c9e9c69934cb47c6b7c8d30a9774c0b928fc408069b381d16e0"),
                     tx.object("0x6"),
                     tx.object(priceInfoObjectIds[0])
                 ],

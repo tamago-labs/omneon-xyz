@@ -806,11 +806,14 @@ module omneon::lending {
     
         let price_i64 = price::get_price(&price_struct);
 
-        if (i64::get_is_negative(&price_i64) == false) {
-            let final_price: u64 = i64::get_magnitude_if_positive(&price_i64)/10000;
-            pool.current_price = final_price;
-            pool.last_update_price_timestamp = clock::timestamp_ms(clock);
+        let final_price: u64  = if (i64::get_is_negative(&price_i64)) {
+            (i64::get_magnitude_if_negative(&price_i64)/10000)
+        } else {
+            (i64::get_magnitude_if_positive(&price_i64)/10000)
         };
+
+        pool.current_price = final_price;
+        pool.last_update_price_timestamp = clock::timestamp_ms(clock);
         
     }
 

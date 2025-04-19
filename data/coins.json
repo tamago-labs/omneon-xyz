@@ -7,16 +7,16 @@
     {
         "name" : "vUSD",
         "image" : "./images/vusd-icon.png",
-        "coin_type" : "0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::mock_vusd::MOCK_VUSD"
+        "coin_type" : "0xf1edff043dcda36bcac9d378594c533a796537cbaac03b3ba194995c85f80619::mock_vusd::MOCK_VUSD"
     },
     {
         "name" : "SHARE-VUSD",
         "image" : "./images/vusd-icon.png",
-        "coin_type" : "0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::SHARE<0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::mock_vusd::MOCK_VUSD,0x2::iota::IOTA>"
+        "coin_type" : "0xf1edff043dcda36bcac9d378594c533a796537cbaac03b3ba194995c85f80619::lending::SHARE<0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::mock_vusd::MOCK_VUSD,0x2::iota::IOTA>"
     },
     {
         "name" : "SHARE-IOTA",
         "image" : "./images/vusd-icon.png",
-        "coin_type" : "0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::lending::SHARE<0x2::iota::IOTA,0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::mock_vusd::MOCK_VUSD>"
+        "coin_type" : "0xf1edff043dcda36bcac9d378594c533a796537cbaac03b3ba194995c85f80619::lending::SHARE<0x2::iota::IOTA,0x655e417ba886bafd6c12a04c923035ea380fc56173c98b2d7689695334e5c504::mock_vusd::MOCK_VUSD>"
     }
 ]

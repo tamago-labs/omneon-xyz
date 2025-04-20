@@ -50,13 +50,14 @@ const NotificationsContainer = () => {
       isQuiteHours: false,
       walletAddress: undefined,
       errorMessage: undefined,
-      loading: false
+      loading: false,
+      completed: false
     }
   );
 
   const [profile, setProfile] = useState<any>(undefined);
 
-  const { loading, errorMessage, user, isActive, isQuiteHours, walletAddress } = values;
+  const { loading, errorMessage, completed, user, isActive, isQuiteHours, walletAddress } = values;
 
   useEffect(() => {
     user && loadProfile(user.loginId).then(setProfile);
@@ -125,6 +126,11 @@ const NotificationsContainer = () => {
   const onSendTest = useCallback(async () => {
     dispatch({ errorMessage: undefined });
 
+    if (!profile || !profile.email) {
+      dispatch({ errorMessage: "Can't find your email" });
+      return
+    }
+
     const isValidAddress = /^0x[a-fA-F0-9]{64}$/.test(profile?.walletAddress || "");
 
     if (!isValidAddress) {
@@ -139,8 +145,7 @@ const NotificationsContainer = () => {
         walletAddress: profile?.walletAddress,
       });
       console.log(data);
-      dispatch({ loading: false }); 
-      alert("Done...")
+      dispatch({ loading: false, completed: true });  
     } catch (error: any) {
       console.log(error);
       dispatch({ loading: false });
@@ -386,17 +391,25 @@ const NotificationsContainer = () => {
              
               {loading
                                 ?
-                                <Puff
+                                <div className="flex w-[150px]">
+<Puff
                                     stroke="#fff"
                                     className="w-5 h-5 mx-auto"
-                                />
+                                /> 
+                                </div>
                                 :
                                 <>
                                       Send Test Notification
                                 </>
                             }
             </button>
+
           </div>
+           {errorMessage && (
+                        <p className="text-sm  mt-2 text-secondary">
+                            {errorMessage}
+                        </p>
+                    )}
         </div>
       </div>
 
@@ -461,6 +474,48 @@ const NotificationsContainer = () => {
                 onClick={() => setShowLinkModal(false)}
               >
                 Cancel
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {completed && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="bg-gray-800 rounded-xl border border-gray-700 p-6 max-w-md w-full"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold">Test Email Sent Successfully</h3>
+              <button
+                className="text-gray-400 hover:text-white"
+                onClick={() => dispatch({
+                  completed: false
+                })}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-gray-300 mb-2">Your test notification is on its way. If you don’t see it soon, check your spam folder.</label>
+              
+            </div>
+
+             
+
+            <div className="flex space-x-3">
+              
+              <button
+                className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                onClick={() => dispatch({
+                  completed: false
+                })}
+              >
+                Close
               </button>
             </div>
           </motion.div>

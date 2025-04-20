@@ -16,59 +16,7 @@ const llm = new ChatAnthropic({
     model: "claude-3-5-sonnet-latest",
     apiKey: process.env.ANTHROPIC_API_KEY,
 })
-
-// const TEST_PAYLOAD = [
-//     {
-//         "id": 1,
-//         "marketName": "IOTA",
-//         "borrow_asset": "IOTA",
-//         "collateral_asset": "vUSD",
-//         "ltv": 0.8,
-//         "liquidationThreshold": 0.85,
-//         "borrowRate": 3.94,
-//         "supplyRate": 0.76,
-//         "totalSupply": 3.9910666667206,
-//         "totalBorrow": 1.4562,
-//         "liquidity": 2.5348666667206,
-//         "utilizationRate": 36.486486485993424,
-//         "currentPrice": 0.1618,
-//         "activePosition": {
-//             "borrowRate": 3.94,
-//             "borrowAmount": 3,
-//             "borrowValue": 0.4854,
-//             "collateralValue": 5,
-//             "collateralAmount": 5,
-//             "liquidationThreshold": 0.85,
-//             "healthFactor": 8.755665430572723
-//         }
-//     },
-//     {
-//         "id": 0,
-//         "marketName": "vUSD",
-//         "borrow_asset": "vUSD",
-//         "collateral_asset": "IOTA",
-//         "image": "./images/vusd-icon.png",
-//         "ltv": 0.75,
-//         "liquidationThreshold": 0.8,
-//         "borrowRate": 1.38,
-//         "supplyRate": 0.08,
-//         "totalSupply": 13,
-//         "totalBorrow": 4,
-//         "liquidity": 9,
-//         "utilizationRate": 30.76923076923077,
-//         "currentPrice": 0.1618,
-//         "activePosition": {
-//             "borrowRate": 1.38,
-//             "borrowAmount": 3,
-//             "borrowValue": 3,
-//             "collateralValue": 4.045,
-//             "collateralAmount": 25,
-//             "liquidationThreshold": 0.8,
-//             "healthFactor": 1.0786666666666667
-//         }
-//     }
-// ]
-
+ 
 export const handler: Schema["SendEmail"]["functionHandler"] = async (event) => {
 
     const { userId, walletAddress } = event.arguments
@@ -109,7 +57,7 @@ export const handler: Schema["SendEmail"]["functionHandler"] = async (event) => 
         },
         Message: {
             Body: {
-                Text: { Data: body },
+                Html: { Data: body },
             },
             Subject: { Data: subject },
         },

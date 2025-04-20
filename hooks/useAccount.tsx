@@ -18,17 +18,16 @@ const useAccount = () => {
       },
     });
 
-    console.log("user :", user);
-
     if (user.data.length === 0) {
       const newUser = {
         username: userId,
+        email: userId,
         isActive: true,
+        isVerified: false
       };
       const response = await client.models.User.create({
         ...newUser,
       });
-      console.log("response: ", response);
 
       entry = newUser;
     } else {

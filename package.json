@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@aws-amplify/ui-react": "^6.5.5",
+    "@aws-sdk/client-ses": "^3.787.0",
     "@iota/dapp-kit": "^0.4.1",
     "@iota/iota-sdk": "^0.6.0",
     "@pythnetwork/pyth-iota-js": "^2.1.0",

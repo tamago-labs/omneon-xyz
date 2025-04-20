@@ -48,7 +48,7 @@ const NotificationsContainer = () => {
   const { user, isActive, isQuiteHours, walletAddress } = values;
 
   useEffect(() => {
-    user && loadProfile(user.userId).then(setProfile);
+    user && loadProfile(user.loginId).then(setProfile);
   }, [user]);
 
   useEffect(() => {

@@ -120,15 +120,7 @@ const RepayModal = ({ close, balances, increaseTick, activeMarket }: any) => {
         <p>Currently, only full repayment is supported.</p>
         <p>Partial repayment will be available in future updates.</p>
       </div>
-      
-      {/* Action Button */}
-     {/* <button
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-        // onClick={handleRepay}
-        // disabled={outstandingDebt > walletBalance || !outstandingDebt}
-      >
-        Repay Full Amount
-      </button>*/}
+       
       <div className="flex space-x-3">
                         <button
                             className={`flex-1 cursor-pointer px-4 py-3 bg-blue-600 rounded-lg transition-colors ${activeMarket?.activePosition?.borrowAmount > balance || !activeMarket?.activePosition?.borrowAmount

@@ -227,20 +227,31 @@ const BorrowModal = ({ close, balances, increaseTick, activeMarket }: any) => {
                         </div>
                     </div>
 
+                    <div className="flex justify-between items-center">
+                        <span className="text-gray-300">Health Factor</span>
+                        <span className={`font-medium ${heathFactor >= 2 ? 'text-green-500' :
+                                heathFactor >= 1.5 ? 'text-blue-500' :
+                                heathFactor >= 1.2 ? 'text-yellow-500' : 'text-red-500'
+                            }`}>
+                            {heathFactor.toFixed(2) || '0.00'}
+                        </span>
+                    </div>
+
                     {/* Borrow Information Section */}
                     <div className="bg-gray-700/50 rounded-lg p-4 space-y-2">
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-400">Borrow APR</span>
                             <span className="text-white">{activeMarket.borrowRate || 0}%</span>
                         </div>
-                        <div className="flex justify-between text-sm">
+                        {/* <div className="flex justify-between text-sm">
                             <span className="text-gray-400">Maximum LTV</span>
                             <span className="text-white">{(activeMarket.ltv * 100) || 0}%</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
+                        </div> */}
+                        {/* <div className="flex justify-between text-sm">
                             <span className="text-gray-400">Health Factor</span>
                             <span className="text-white">{heathFactor.toFixed(2)}</span>
-                        </div>
+                        </div> */}
+                        
 
                     </div>
 

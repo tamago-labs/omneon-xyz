@@ -32,8 +32,11 @@ const Header = () => {
                  <Link href="/staking" className={`hover:text-white transition-colors ${ pathname === "/staking" && "text-white" }`}>
                     Staking
                 </Link> 
-                <Link href="/analytics" className={`hover:text-white transition-colors ${ pathname === "/analytics" && "text-white" }`}>
+                {/* <Link href="/analytics" className={`hover:text-white transition-colors ${ pathname === "/analytics" && "text-white" }`}>
                     Analytics
+                </Link> */}
+                 <Link href="/notifications" className={`hover:text-white transition-colors ${ pathname === "/notifications" && "text-white" }`}>
+                 Notifications
                 </Link>
                
             </div>

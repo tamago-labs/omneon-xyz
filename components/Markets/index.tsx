@@ -428,7 +428,7 @@ const MarketsContainer = () => {
                         <p className="text-gray-300 text-sm">
                             Omneon uses AI to monitor your health factor, accrued interest, and system status—then generates a personalized report delivered straight to your inbox. Stay informed and act quickly when your loan or collateral needs attention.
                         </p>
-                        <Link href="/alerts" className='mt-auto mr-auto cursor-pointer'>
+                        <Link href="/notifications" className='mt-auto mr-auto cursor-pointer'>
                             <button
                                 className={`flex-1 cursor-pointer md:flex-none px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center justify-center transition-colors`}
                             >

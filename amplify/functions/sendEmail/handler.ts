@@ -77,7 +77,7 @@ export const handler: Schema["SendEmail"]["functionHandler"] = async (event) => 
             messages: [
                 {
                     role: 'user',
-                    content: `Please summarize the following JSON data into a clear and concise email format suitable for user notifications. \n${TEST_PAYLOAD}`
+                    content: `Please summarize the following JSON data into a clear and concise email format suitable for user notifications. \n${JSON.stringify(TEST_PAYLOAD)}`
                 }
             ]
         }
@@ -121,8 +121,6 @@ export const handler: Schema["SendEmail"]["functionHandler"] = async (event) => 
     return {
         userId: userId,
         message,
-        output,
-        finalized,
         content
     }
 }

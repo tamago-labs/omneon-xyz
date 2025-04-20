@@ -27,6 +27,14 @@ import {
 import { useCurrentAccount, useIotaClientQuery } from "@iota/dapp-kit";
 import useAccount from "@/hooks/useAccount";
 
+import type { Schema } from "../../amplify/data/resource";
+import { Amplify } from "aws-amplify";
+import { generateClient } from "aws-amplify/api";
+
+const client = generateClient<Schema>({
+  authMode: "userPool",
+});
+
 const NotificationsContainer = () => {
   const { loadProfile, updateIsActive, updateWalletAddress } = useAccount();
 
@@ -111,6 +119,36 @@ const NotificationsContainer = () => {
     setShowLinkModal(false);
   }, [profile, shownAddress]);
 
+  const onSendTest = useCallback(async () => {
+    // dispatch({ errorMessage: undefined });
+
+    // if (!name || name.length !== 66) {
+    //   dispatch({ errorMessage: "Invalid address" });
+    //   return;
+    // }
+
+    // dispatch({ loading: true });
+    try {
+      const { data } = await client.queries.SendEmail({
+        userId: profile?.email,
+        walletAddress: profile?.walletAddress,
+      });
+      console.log(data);
+      // dispatch({ loading: false });
+      // close();
+
+      // setTimeout(() => {
+      //   address && loadBalance(address);
+      // }, 2000);
+    } catch (error: any) {
+      console.log(error);
+      // dispatch({ loading: false });
+      // dispatch({ errorMessage: error.message });
+    }
+  }, [profile]);
+
+  console.log("profile:", profile);
+
   return (
     <div className="min-h-screen  text-white">
       <div className="container mx-auto ">
@@ -138,15 +176,30 @@ const NotificationsContainer = () => {
 
                   <div className="flex items-center">
                     <p className="text-gray-300">{user?.loginId}</p>
-                    <span className="ml-2 text-green-400 flex items-center text-sm">
-                      <CheckCircle size={14} className="mr-1" /> Verified
-                    </span>
+                    {profile?.isVerified && (
+                      <span className="ml-2 text-green-400 flex items-center text-sm">
+                        <CheckCircle size={14} className="mr-1" /> Verified
+                      </span>
+                    )}
+                    {/* <p className="text-yellow-400 my-auto">No wallet linked</p> */}
                   </div>
 
-                  <p className="text-sm text-gray-400 mt-2">
-                    We'll send important notifications about your positions and
-                    platform updates to this email address.
-                  </p>
+                  {!profile?.isVerified ? (
+                    <div className="mr-6 my-2    ">
+                      <p className="text-sm text-yellow-300">
+                        <strong className="text-yellow-300">
+                          Email not verified:
+                        </strong>{" "}
+                        Please check your inbox for the verification email.
+                        Contact us if you didn’t receive it.
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-400 mt-2">
+                      We'll send important notifications about your positions
+                      and platform updates to this email address.
+                    </p>
+                  )}
                 </div>
 
                 {/* Wallet Configuration */}
@@ -330,7 +383,7 @@ const NotificationsContainer = () => {
               </select>
             </div>
 
-            <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+            <button onClick={onSendTest} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
               Send Test Notification
             </button>
           </div>

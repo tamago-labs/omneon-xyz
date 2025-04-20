@@ -7,7 +7,7 @@ export const sendEmail = defineFunction({
   name: 'sendEmail', 
   entry: './handler.ts',
   environment: {
-    // APTOS_MANAGED_KEY: secret('APTOS_MANAGED_KEY')
+    ANTHROPIC_API_KEY: secret('ANTHROPIC_API_KEY'),
   },
   timeoutSeconds: 60
 });

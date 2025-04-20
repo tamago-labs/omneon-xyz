@@ -377,7 +377,7 @@ const NotificationsContainer = () => {
           </p>
 
           <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <div className="w-full md:w-auto">
+            {/* <div className="w-full md:w-auto">
               <select className="w-full md:w-64 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white">
                 <option value="">Select notification type...</option>
                 <option value="health-factor">Health Factor Alert</option>
@@ -385,7 +385,7 @@ const NotificationsContainer = () => {
                   Protocol Updates & Insights
                 </option>
               </select>
-            </div>
+            </div> */}
 
             <button disabled={loading} onClick={onSendTest} className="cursor-pointer px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
              

@@ -1,127 +1,438 @@
-"use client"
+"use client";
 
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  LockIcon,
+  UnlockIcon,
+  Clock,
+  ChevronRight,
+  Award,
+  TrendingUp,
+  Calendar,
+  AlertCircle,
+} from "lucide-react";
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { LockIcon, UnlockIcon, Clock, ChevronRight, Award, TrendingUp, Calendar, AlertCircle } from 'lucide-react';
-
+// Mock data for demonstration purposes
+const mockAssets = [
+  {
+    name: "IOTA",
+    symbol: "MIOTA",
+    apy: "18.2%",
+    balance: "1,024.56",
+    stakedBalance: "512.28",
+    earnedRewards: "45.8",
+  },
+  {
+    name: "USDC",
+    symbol: "USDC",
+    apy: "12.5%",
+    balance: "2,500.00",
+    stakedBalance: "1,500.00",
+    earnedRewards: "36.75",
+  },
+];
 
 const StakingContainer = () => {
+  const [assets, setAssets] = useState<any>([]);
+  const [selectedAsset, setSelectedAsset] = useState<any>(null);
+  const [isStakeModalOpen, setIsStakeModalOpen] = useState(false);
+  const [isUnstakeModalOpen, setIsUnstakeModalOpen] = useState(false);
+  const [stakeAmount, setStakeAmount] = useState("");
+  const [unstakeAmount, setUnstakeAmount] = useState("");
 
-    // Mock data for demonstration
-    const stakingPools = [
-        {
-            id: 'iota-pool',
-            name: 'IOTA Share',
-            icon: '🔷',
-            apy: 18.5,
-            totalStaked: 1250000,
-            userStaked: 500,
-            userStakedValue: 1500,
-            earned: 125,
-            lockPeriods: [
-                { days: 30, bonus: 0 },
-                { days: 90, bonus: 5 },
-                { days: 180, bonus: 12 },
-                { days: 365, bonus: 25 },
-            ]
-        },
-        {
-            id: 'usdc-pool',
-            name: 'USDC Share',
-            icon: '💵',
-            apy: 15.2,
-            totalStaked: 2450000,
-            userStaked: 1350,
-            userStakedValue: 1350,
-            earned: 85,
-            lockPeriods: [
-                { days: 30, bonus: 0 },
-                { days: 90, bonus: 5 },
-                { days: 180, bonus: 12 },
-                { days: 365, bonus: 25 },
-            ]
-        },
-        {
-            id: 'eth-pool',
-            name: 'ETH Share',
-            icon: '⬙',
-            apy: 22.4,
-            totalStaked: 1850000,
-            userStaked: 0,
-            userStakedValue: 0,
-            earned: 0,
-            lockPeriods: [
-                { days: 30, bonus: 0 },
-                { days: 90, bonus: 5 },
-                { days: 180, bonus: 12 },
-                { days: 365, bonus: 25 },
-            ]
-        }
-    ];
+  // Modal handlers
+  const openStakeModal = (asset: any) => {
+    setSelectedAsset(asset);
+    setStakeAmount("");
+    setIsStakeModalOpen(true);
+  };
 
-    const userWallet = {
-        'IOTA Share': 250,
-        'USDC Share': 500,
-        'ETH Share': 0.2
-    };
+  const openUnstakeModal = (asset: any) => {
+    setSelectedAsset(asset);
+    setUnstakeAmount("");
+    setIsUnstakeModalOpen(true);
+  };
 
-    const omneonStats = {
-        price: 2.45,
-        totalStaked: 3820000,
-        aprRange: [15.2, 22.4],
-        marketCap: 24500000,
-        circulating: 10000000
-    };
+  const closeModals = () => {
+    setIsStakeModalOpen(false);
+    setIsUnstakeModalOpen(false);
+    setSelectedAsset(null);
+  };
 
-    const [activePool, setActivePool] = useState(null);
-    const [stakeAmount, setStakeAmount] = useState('');
-    const [selectedPeriod, setSelectedPeriod] = useState(null);
-    const [showStakeModal, setShowStakeModal] = useState(false);
+  // Action handlers
+  const handleStake = () => {
+    // In a real application, this would call your contract
+    console.log(`Staking ${stakeAmount} ${selectedAsset.symbol}`);
+    closeModals();
+  };
 
-    // Format currency values
-    const formatCurrency = (value: any) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(value);
-    };
+  const handleUnstake = () => {
+    // In a real application, this would call your contract
+    console.log(`Unstaking ${unstakeAmount} ${selectedAsset.symbol}`);
+    closeModals();
+  };
 
-    const handleStakeClick = (pool: any) => {
-        setActivePool(pool);
-        setSelectedPeriod(pool.lockPeriods[0]);
-        setStakeAmount('');
-        setShowStakeModal(true);
-    };
+  const handleClaim = (asset: any) => {
+    // In a real application, this would call your contract
+    console.log(`Claiming rewards for ${asset.symbol}`);
+  };
 
-    const handleStakeSubmit = () => {
-        // Here you would implement the actual staking logic
-        setShowStakeModal(false);
-        // Reset state
-        setActivePool(null);
-        setStakeAmount('');
-        setSelectedPeriod(null);
-    };
+  const handleMaxStake = () => {
+    if (selectedAsset) {
+      setStakeAmount(selectedAsset.balance);
+    }
+  };
 
-    const calculateReward = (amount: any, apy: any, days: any) => {
-        if (!amount || isNaN(amount)) return 0;
-        return (parseFloat(amount) * (apy / 100) * (days / 365)).toFixed(2);
-    };
+  const handleMaxUnstake = () => {
+    if (selectedAsset) {
+      setUnstakeAmount(selectedAsset.stakedBalance);
+    }
+  };
 
-    const getEffectiveApy = (baseApy: any, bonus: any) => {
-        return (baseApy * (1 + bonus / 100)).toFixed(1);
-    };
+  return (
+    <div className="min-h-screen text-white p-6">
+      {/* Header */}
+      <div className="max-w-4xl mx-auto mb-10">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center"
+        >
+          <h1 className="text-4xl font-bold mb-2">Omneon Staking</h1>
+          <p className="text-lg text-blue-200">
+            Stake your lending pool share tokens to earn OMN rewards —coming
+            soon!
+          </p>
+        </motion.div>
 
-    return (
-        <div className="min-h-screen  text-white">
-            <div className="container mx-auto ">
-                <h1 className="text-3xl font-bold mb-2">Staking</h1>
-                <p className="text-gray-300 mb-8">Lock your share tokens to earn Omneon Token rewards</p>
+        {/* Stats Overview */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+          className="grid grid-cols-3 gap-4 mt-8 bg-gray-800/30 backdrop-blur-sm  p-6 rounded-xl  "
+        >
+          <div className="text-center">
+            <p className="text-blue-300 mb-1">Total Value Staked</p>
+            <h2 className="text-2xl font-bold">$0</h2>
+          </div>
+          <div className="text-center">
+            <p className="text-blue-300 mb-1">OMN Price</p>
+            <h2 className="text-2xl font-bold">$0.00</h2>
+          </div>
+          <div className="text-center">
+            <p className="text-blue-300 mb-1">My OMN Balance</p>
+            <h2 className="text-2xl font-bold">0 OMN</h2>
+          </div>
+        </motion.div>
+      </div>
 
-    
-                {/* <div className="mb-8 bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700 p-6">
+      {/* Staking Pools */}
+      <div className="max-w-4xl mx-auto">
+        {/* <h2 className="text-2xl font-bold mb-6">Your Staking Positions</h2> */}
+
+        <div className="space-y-4">
+          {assets.map((asset: any, index: number) => (
+            <motion.div
+              key={asset.symbol}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 * index, duration: 0.5 }}
+              className="bg-gray-800/30  rounded-xl p-6 backdrop-blur-sm"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="bg-blue-700 rounded-full h-10 w-10 flex items-center justify-center mr-4">
+                    {asset.symbol.charAt(0)}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold">{asset.name}</h3>
+                    <p className="text-blue-300">APY: {asset.apy}</p>
+                  </div>
+                </div>
+
+                {/* Asset Details */}
+                <div className="grid grid-cols-3 gap-8 text-right">
+                  <div>
+                    <p className="text-blue-300 text-sm">Available</p>
+                    <p className="font-medium">
+                      {asset.balance} {asset.symbol}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-blue-300 text-sm">Staked</p>
+                    <p className="font-medium">
+                      {asset.stakedBalance} {asset.symbol}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-blue-300 text-sm">Earned</p>
+                    <p className="font-medium">{asset.earnedRewards} OMN</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => handleClaim(asset)}
+                  className="px-4 py-2 bg-gradient-to-r from-green-500 to-teal-500 rounded-lg hover:from-green-600 hover:to-teal-600 transition-all"
+                >
+                  Claim Rewards
+                </button>
+                <button
+                  onClick={() => openUnstakeModal(asset)}
+                  className="px-4 py-2 bg-blue-700 rounded-lg hover:bg-blue-600 transition-all"
+                >
+                  Unstake
+                </button>
+                <button
+                  onClick={() => openStakeModal(asset)}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all"
+                >
+                  Stake
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* Stake Modal */}
+      <AnimatePresence>
+        {isStakeModalOpen && selectedAsset && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-blue-900 rounded-xl p-6 max-w-md w-full"
+            >
+              <h3 className="text-2xl font-bold mb-4">
+                Stake {selectedAsset.symbol}
+              </h3>
+              <div className="mb-6">
+                <p className="text-blue-300 mb-2">
+                  Available: {selectedAsset.balance} {selectedAsset.symbol}
+                </p>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={stakeAmount}
+                    onChange={(e) => setStakeAmount(e.target.value)}
+                    className="w-full bg-blue-800 bg-opacity-50 rounded-lg py-3 px-4 text-white"
+                    placeholder="Enter amount to stake"
+                  />
+                  <button
+                    onClick={handleMaxStake}
+                    className="absolute right-2 top-2 bg-blue-700 px-2 py-1 rounded text-sm"
+                  >
+                    MAX
+                  </button>
+                </div>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={closeModals}
+                  className="flex-1 px-4 py-3 bg-blue-800 rounded-lg hover:bg-blue-700 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleStake}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all"
+                >
+                  Stake
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Unstake Modal */}
+      <AnimatePresence>
+        {isUnstakeModalOpen && selectedAsset && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-blue-900 rounded-xl p-6 max-w-md w-full"
+            >
+              <h3 className="text-2xl font-bold mb-4">
+                Unstake {selectedAsset.symbol}
+              </h3>
+              <div className="mb-6">
+                <p className="text-blue-300 mb-2">
+                  Staked: {selectedAsset.stakedBalance} {selectedAsset.symbol}
+                </p>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={unstakeAmount}
+                    onChange={(e) => setUnstakeAmount(e.target.value)}
+                    className="w-full bg-blue-800 bg-opacity-50 rounded-lg py-3 px-4 text-white"
+                    placeholder="Enter amount to unstake"
+                  />
+                  <button
+                    onClick={handleMaxUnstake}
+                    className="absolute right-2 top-2 bg-blue-700 px-2 py-1 rounded text-sm"
+                  >
+                    MAX
+                  </button>
+                </div>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={closeModals}
+                  className="flex-1 px-4 py-3 bg-blue-800 rounded-lg hover:bg-blue-700 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUnstake}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-teal-500 rounded-lg hover:from-blue-600 hover:to-teal-600 transition-all"
+                >
+                  Unstake
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const StakingContainerOLD = () => {
+  // Mock data for demonstration
+  const stakingPools = [
+    {
+      id: "iota-pool",
+      name: "IOTA Share",
+      icon: "🔷",
+      apy: 18.5,
+      totalStaked: 1250000,
+      userStaked: 500,
+      userStakedValue: 1500,
+      earned: 125,
+      lockPeriods: [
+        { days: 30, bonus: 0 },
+        { days: 90, bonus: 5 },
+        { days: 180, bonus: 12 },
+        { days: 365, bonus: 25 },
+      ],
+    },
+    {
+      id: "usdc-pool",
+      name: "USDC Share",
+      icon: "💵",
+      apy: 15.2,
+      totalStaked: 2450000,
+      userStaked: 1350,
+      userStakedValue: 1350,
+      earned: 85,
+      lockPeriods: [
+        { days: 30, bonus: 0 },
+        { days: 90, bonus: 5 },
+        { days: 180, bonus: 12 },
+        { days: 365, bonus: 25 },
+      ],
+    },
+    {
+      id: "eth-pool",
+      name: "ETH Share",
+      icon: "⬙",
+      apy: 22.4,
+      totalStaked: 1850000,
+      userStaked: 0,
+      userStakedValue: 0,
+      earned: 0,
+      lockPeriods: [
+        { days: 30, bonus: 0 },
+        { days: 90, bonus: 5 },
+        { days: 180, bonus: 12 },
+        { days: 365, bonus: 25 },
+      ],
+    },
+  ];
+
+  const userWallet = {
+    "IOTA Share": 250,
+    "USDC Share": 500,
+    "ETH Share": 0.2,
+  };
+
+  const omneonStats = {
+    price: 2.45,
+    totalStaked: 3820000,
+    aprRange: [15.2, 22.4],
+    marketCap: 24500000,
+    circulating: 10000000,
+  };
+
+  const [activePool, setActivePool] = useState(null);
+  const [stakeAmount, setStakeAmount] = useState("");
+  const [selectedPeriod, setSelectedPeriod] = useState(null);
+  const [showStakeModal, setShowStakeModal] = useState(false);
+
+  // Format currency values
+  const formatCurrency = (value: any) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
+  const handleStakeClick = (pool: any) => {
+    setActivePool(pool);
+    setSelectedPeriod(pool.lockPeriods[0]);
+    setStakeAmount("");
+    setShowStakeModal(true);
+  };
+
+  const handleStakeSubmit = () => {
+    // Here you would implement the actual staking logic
+    setShowStakeModal(false);
+    // Reset state
+    setActivePool(null);
+    setStakeAmount("");
+    setSelectedPeriod(null);
+  };
+
+  const calculateReward = (amount: any, apy: any, days: any) => {
+    if (!amount || isNaN(amount)) return 0;
+    return (parseFloat(amount) * (apy / 100) * (days / 365)).toFixed(2);
+  };
+
+  const getEffectiveApy = (baseApy: any, bonus: any) => {
+    return (baseApy * (1 + bonus / 100)).toFixed(1);
+  };
+
+  return (
+    <div className="min-h-screen  text-white">
+      <div className="container mx-auto ">
+        <h1 className="text-3xl font-bold mb-2">Staking</h1>
+        <p className="text-gray-300 mb-8">
+          Lock your share tokens to earn Omneon Token rewards
+        </p>
+
+        {/* <div className="mb-8 bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700 p-6">
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4">
                         <div className="flex items-center mb-4 md:mb-0">
                             <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center mr-3 text-xl font-bold">Ω</div>
@@ -162,14 +473,14 @@ const StakingContainer = () => {
                     </div>
                 </div>
 
-                
+
                 <h2 className="text-xl font-bold mb-4">Available Staking Pools</h2>
                 <div className="grid grid-cols-1 gap-4 mb-8">
                     {stakingPools.map((pool) => (
                         <div key={pool.id} className="bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden">
                             <div className="p-6">
                                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
-                                     
+
                                     <div className="flex items-center mb-4 md:mb-0">
                                         <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center mr-3 text-xl">
                                             {pool.icon}
@@ -183,7 +494,7 @@ const StakingContainer = () => {
                                         </div>
                                     </div>
 
-                                   
+
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 md:mb-0">
                                         <div>
                                             <p className="text-xs text-gray-400">Total Staked</p>
@@ -206,7 +517,7 @@ const StakingContainer = () => {
                                         </div>
                                     </div>
 
-                                    
+
                                     <div className="flex space-x-2 w-full md:w-auto">
                                         {pool.userStaked > 0 && (
                                             <button
@@ -238,7 +549,7 @@ const StakingContainer = () => {
                                     </div>
                                 </div>
 
-                               
+
                                 {pool.userStaked > 0 && (
                                     <div className="mt-6 pt-4 border-t border-gray-700">
                                         <h4 className="text-sm font-medium mb-3 flex items-center">
@@ -259,7 +570,7 @@ const StakingContainer = () => {
                                 )}
                             </div>
 
-                             
+
                             {pool.userStaked > 0 && (
                                 <div className="bg-gray-700/30 px-6 py-4">
                                     <div className="flex items-center justify-between mb-2">
@@ -283,7 +594,7 @@ const StakingContainer = () => {
                     ))}
                 </div>
 
-                
+
                 <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700 p-6 mb-8">
                     <h2 className="text-xl font-bold mb-6">How Staking Works</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -319,7 +630,7 @@ const StakingContainer = () => {
                     </div>
                 </div>
 
-                
+
                 <div className="bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700 p-6">
                     <h2 className="text-xl font-bold mb-6">Frequently Asked Questions</h2>
                     <div className="space-y-4">
@@ -345,10 +656,9 @@ const StakingContainer = () => {
                         </div>
                     </div>
                 </div> */}
-            </div>
+      </div>
 
-            
-            {/* {showStakeModal && activePool && (
+      {/* {showStakeModal && activePool && (
                 <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
@@ -457,8 +767,8 @@ const StakingContainer = () => {
                     </motion.div>
                 </div>
             )} */}
-        </div>
-    )
-}
+    </div>
+  );
+};
 
-export default StakingContainer
+export default StakingContainer;

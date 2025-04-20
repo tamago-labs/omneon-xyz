@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useReducer, useEffect } from "react";
+import React, { useState, useCallback, useReducer, useEffect } from "react";
 import { getCurrentUser, signIn } from "aws-amplify/auth";
 import { motion } from "framer-motion";
 import {
@@ -24,8 +24,15 @@ import {
   Info,
   RefreshCw,
 } from "lucide-react";
+import { useCurrentAccount, useIotaClientQuery } from "@iota/dapp-kit";
+import useAccount from "@/hooks/useAccount";
 
 const NotificationsContainer = () => {
+  const { loadProfile, updateIsActive, updateWalletAddress } = useAccount();
+
+  const account = useCurrentAccount();
+  const address = account && account.address;
+
   const [values, dispatch] = useReducer(
     (curVal: any, newVal: any) => ({ ...curVal, ...newVal }),
     {
@@ -36,7 +43,22 @@ const NotificationsContainer = () => {
     }
   );
 
+  const [profile, setProfile] = useState<any>(undefined);
+
   const { user, isActive, isQuiteHours, walletAddress } = values;
+
+  useEffect(() => {
+    user && loadProfile(user.userId).then(setProfile);
+  }, [user]);
+
+  useEffect(() => {
+    if (profile) {
+      dispatch({
+        isActive: profile.isActive,
+        walletAddress: profile?.walletAddress,
+      });
+    }
+  }, [profile]);
 
   useEffect(() => {
     (async () => {
@@ -58,18 +80,36 @@ const NotificationsContainer = () => {
     })();
   }, []);
 
-  // const [walletAddress, setWalletAddress] = useState(
-  //   "0x71C7656EC7ab88b098defB751B7401B5f6d8976F"
-  // );
   const [showLinkModal, setShowLinkModal] = useState(false);
-  // const [newWalletAddress, setNewWalletAddress] = useState("");
 
-  const handleLinkWallet = () => {
-    // setWalletAddress(newWalletAddress);
+  const handleIsActive = useCallback(() => {
+    updateIsActive(profile.id, !isActive);
+    dispatch({
+      isActive: !isActive,
+    });
+  }, [isActive, profile]);
+
+  const shownAddress = walletAddress ? walletAddress : address;
+
+  const handleLinkWallet = useCallback(() => {
+    const isValidAddress = /^0x[a-fA-F0-9]{64}$/.test(shownAddress || "");
+
+    if (!isValidAddress) {
+      alert("Invalid wallet address");
+      dispatch({
+        walletAddress: undefined,
+      });
+      return;
+    }
+
+    updateWalletAddress(profile.id, shownAddress);
+
+    dispatch({
+      walletAddress: shownAddress,
+    });
+
     setShowLinkModal(false);
-  };
-
-  console.log("user :", user);
+  }, [profile, shownAddress]);
 
   return (
     <div className="min-h-screen  text-white">
@@ -163,12 +203,8 @@ const NotificationsContainer = () => {
                           type="checkbox"
                           id="notificationsActive"
                           className="sr-only peer"
-                          onClick={() =>
-                            dispatch({
-                              isActive: !isActive,
-                            })
-                          }
-                          defaultChecked={isActive}
+                          onClick={handleIsActive}
+                          checked={isActive}
                         />
                         <label
                           htmlFor="notificationsActive"
@@ -176,7 +212,7 @@ const NotificationsContainer = () => {
                         >
                           <span
                             className={`absolute ${
-                              isActive ? "left-1" : "right-1"
+                              !isActive ? "left-1" : "right-1"
                             } w-4 h-4 bg-white rounded-full transition-all peer-checked:left-7`}
                           ></span>
                         </label>
@@ -201,7 +237,7 @@ const NotificationsContainer = () => {
                                 isQuiteHours: !isQuiteHours,
                               })
                             }
-                            defaultChecked={isQuiteHours}
+                            checked={isQuiteHours}
                           />
                           <label
                             htmlFor="quietHours"
@@ -209,7 +245,7 @@ const NotificationsContainer = () => {
                           >
                             <span
                               className={`absolute ${
-                                isQuiteHours ? "left-1" : "right-1"
+                                !isQuiteHours ? "left-1" : "right-1"
                               } w-4 h-4 bg-white rounded-full transition-all peer-checked:left-7`}
                             ></span>
                           </label>
@@ -288,7 +324,9 @@ const NotificationsContainer = () => {
               <select className="w-full md:w-64 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white">
                 <option value="">Select notification type...</option>
                 <option value="health-factor">Health Factor Alert</option>
-                <option value="weekly-summary">Weekly Summary</option>
+                <option value="weekly-summary">
+                  Protocol Updates & Insights
+                </option>
               </select>
             </div>
 
@@ -324,8 +362,12 @@ const NotificationsContainer = () => {
                 type="text"
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white font-mono"
                 placeholder="0x..."
-                // value={newWalletAddress}
-                // onChange={(e) => setNewWalletAddress(e.target.value)}
+                value={shownAddress}
+                onChange={(e) => {
+                  dispatch({
+                    walletAddress: e.target.value,
+                  });
+                }}
               />
               <p className="text-sm text-gray-400 mt-2">
                 Enter the address of the wallet you use with Omneon
@@ -342,21 +384,21 @@ const NotificationsContainer = () => {
 
             <div className="flex space-x-3">
               <button
+                className={`flex-1 px-4 py-3 bg-purple-600 rounded-lg transition-colors ${
+                  !shownAddress
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-purple-700"
+                }`}
+                disabled={!shownAddress}
+                onClick={handleLinkWallet}
+              >
+                Link Wallet
+              </button>
+              <button
                 className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
                 onClick={() => setShowLinkModal(false)}
               >
                 Cancel
-              </button>
-              <button
-              // className={`flex-1 px-4 py-3 bg-purple-600 rounded-lg transition-colors ${
-              //   !newWalletAddress
-              //     ? "opacity-50 cursor-not-allowed"
-              //     : "hover:bg-purple-700"
-              // }`}
-              // disabled={!newWalletAddress}
-              // onClick={handleLinkWallet}
-              >
-                Link Wallet
               </button>
             </div>
           </motion.div>

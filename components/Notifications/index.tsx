@@ -1,5 +1,6 @@
 "use client";
 
+import { Puff } from 'react-loading-icons'
 import React, { useState, useCallback, useReducer, useEffect } from "react";
 import { getCurrentUser, signIn } from "aws-amplify/auth";
 import { motion } from "framer-motion";
@@ -48,12 +49,14 @@ const NotificationsContainer = () => {
       isActive: true,
       isQuiteHours: false,
       walletAddress: undefined,
+      errorMessage: undefined,
+      loading: false
     }
   );
 
   const [profile, setProfile] = useState<any>(undefined);
 
-  const { user, isActive, isQuiteHours, walletAddress } = values;
+  const { loading, errorMessage, user, isActive, isQuiteHours, walletAddress } = values;
 
   useEffect(() => {
     user && loadProfile(user.loginId).then(setProfile);
@@ -120,30 +123,28 @@ const NotificationsContainer = () => {
   }, [profile, shownAddress]);
 
   const onSendTest = useCallback(async () => {
-    // dispatch({ errorMessage: undefined });
+    dispatch({ errorMessage: undefined });
 
-    // if (!name || name.length !== 66) {
-    //   dispatch({ errorMessage: "Invalid address" });
-    //   return;
-    // }
+    const isValidAddress = /^0x[a-fA-F0-9]{64}$/.test(profile?.walletAddress || "");
 
-    // dispatch({ loading: true });
+    if (!isValidAddress) {
+      dispatch({ errorMessage: "Invalid wallet address" });
+      return;
+    }
+
+    dispatch({ loading: true });
     try {
       const { data } = await client.queries.SendEmail({
         userId: profile?.email,
         walletAddress: profile?.walletAddress,
       });
       console.log(data);
-      // dispatch({ loading: false });
-      // close();
-
-      // setTimeout(() => {
-      //   address && loadBalance(address);
-      // }, 2000);
+      dispatch({ loading: false }); 
+      alert("Done...")
     } catch (error: any) {
       console.log(error);
-      // dispatch({ loading: false });
-      // dispatch({ errorMessage: error.message });
+      dispatch({ loading: false });
+      dispatch({ errorMessage: error.message });
     }
   }, [profile]);
 
@@ -264,9 +265,8 @@ const NotificationsContainer = () => {
                           className="relative w-12 h-6 bg-gray-600 rounded-full flex items-center cursor-pointer peer-checked:bg-blue-600"
                         >
                           <span
-                            className={`absolute ${
-                              !isActive ? "left-1" : "right-1"
-                            } w-4 h-4 bg-white rounded-full transition-all peer-checked:left-7`}
+                            className={`absolute ${!isActive ? "left-1" : "right-1"
+                              } w-4 h-4 bg-white rounded-full transition-all peer-checked:left-7`}
                           ></span>
                         </label>
                       </div>
@@ -297,9 +297,8 @@ const NotificationsContainer = () => {
                             className="relative w-12 h-6 bg-gray-600 rounded-full flex items-center cursor-pointer peer-checked:bg-blue-600"
                           >
                             <span
-                              className={`absolute ${
-                                !isQuiteHours ? "left-1" : "right-1"
-                              } w-4 h-4 bg-white rounded-full transition-all peer-checked:left-7`}
+                              className={`absolute ${!isQuiteHours ? "left-1" : "right-1"
+                                } w-4 h-4 bg-white rounded-full transition-all peer-checked:left-7`}
                             ></span>
                           </label>
                         </div>
@@ -383,8 +382,19 @@ const NotificationsContainer = () => {
               </select>
             </div>
 
-            <button onClick={onSendTest} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
-              Send Test Notification
+            <button disabled={loading} onClick={onSendTest} className="cursor-pointer px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+             
+              {loading
+                                ?
+                                <Puff
+                                    stroke="#fff"
+                                    className="w-5 h-5 mx-auto"
+                                />
+                                :
+                                <>
+                                      Send Test Notification
+                                </>
+                            }
             </button>
           </div>
         </div>
@@ -437,11 +447,10 @@ const NotificationsContainer = () => {
 
             <div className="flex space-x-3">
               <button
-                className={`flex-1 px-4 py-3 bg-purple-600 rounded-lg transition-colors ${
-                  !shownAddress
+                className={`flex-1 px-4 py-3 bg-purple-600 rounded-lg transition-colors ${!shownAddress
                     ? "opacity-50 cursor-not-allowed"
                     : "hover:bg-purple-700"
-                }`}
+                  }`}
                 disabled={!shownAddress}
                 onClick={handleLinkWallet}
               >

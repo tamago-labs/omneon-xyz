@@ -4,6 +4,9 @@ import { ChatAnthropic } from "@langchain/anthropic"
 import { AIMessage, BaseMessage, ChatMessage, HumanMessage } from "@langchain/core/messages"
 import { createReactAgent } from "@langchain/langgraph/prebuilt"
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+import { getFullnodeUrl, IotaClient } from '@iota/iota-sdk/client';
+import MARKETS from "../../../data/markets.json"
+import BigNumber from "bignumber.js";
 
 const sesClient = new SESClient({ region: "ap-southeast-1" });
 
@@ -14,70 +17,74 @@ const llm = new ChatAnthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
 })
 
-const TEST_PAYLOAD = [
-    {
-        "id": 1,
-        "marketName": "IOTA",
-        "borrow_asset": "IOTA",
-        "collateral_asset": "vUSD",
-        "ltv": 0.8,
-        "liquidationThreshold": 0.85,
-        "borrowRate": 3.94,
-        "supplyRate": 0.76,
-        "totalSupply": 3.9910666667206,
-        "totalBorrow": 1.4562,
-        "liquidity": 2.5348666667206,
-        "utilizationRate": 36.486486485993424,
-        "currentPrice": 0.1618,
-        "activePosition": {
-            "borrowRate": 3.94,
-            "borrowAmount": 3,
-            "borrowValue": 0.4854,
-            "collateralValue": 5,
-            "collateralAmount": 5,
-            "liquidationThreshold": 0.85,
-            "healthFactor": 8.755665430572723
-        }
-    },
-    {
-        "id": 0,
-        "marketName": "vUSD",
-        "borrow_asset": "vUSD",
-        "collateral_asset": "IOTA",
-        "image": "./images/vusd-icon.png",
-        "ltv": 0.75,
-        "liquidationThreshold": 0.8,
-        "borrowRate": 1.38,
-        "supplyRate": 0.08,
-        "totalSupply": 13,
-        "totalBorrow": 4,
-        "liquidity": 9,
-        "utilizationRate": 30.76923076923077,
-        "currentPrice": 0.1618,
-        "activePosition": {
-            "borrowRate": 1.38,
-            "borrowAmount": 3,
-            "borrowValue": 3,
-            "collateralValue": 4.045,
-            "collateralAmount": 25,
-            "liquidationThreshold": 0.8,
-            "healthFactor": 1.0786666666666667
-        }
-    }
-]
+// const TEST_PAYLOAD = [
+//     {
+//         "id": 1,
+//         "marketName": "IOTA",
+//         "borrow_asset": "IOTA",
+//         "collateral_asset": "vUSD",
+//         "ltv": 0.8,
+//         "liquidationThreshold": 0.85,
+//         "borrowRate": 3.94,
+//         "supplyRate": 0.76,
+//         "totalSupply": 3.9910666667206,
+//         "totalBorrow": 1.4562,
+//         "liquidity": 2.5348666667206,
+//         "utilizationRate": 36.486486485993424,
+//         "currentPrice": 0.1618,
+//         "activePosition": {
+//             "borrowRate": 3.94,
+//             "borrowAmount": 3,
+//             "borrowValue": 0.4854,
+//             "collateralValue": 5,
+//             "collateralAmount": 5,
+//             "liquidationThreshold": 0.85,
+//             "healthFactor": 8.755665430572723
+//         }
+//     },
+//     {
+//         "id": 0,
+//         "marketName": "vUSD",
+//         "borrow_asset": "vUSD",
+//         "collateral_asset": "IOTA",
+//         "image": "./images/vusd-icon.png",
+//         "ltv": 0.75,
+//         "liquidationThreshold": 0.8,
+//         "borrowRate": 1.38,
+//         "supplyRate": 0.08,
+//         "totalSupply": 13,
+//         "totalBorrow": 4,
+//         "liquidity": 9,
+//         "utilizationRate": 30.76923076923077,
+//         "currentPrice": 0.1618,
+//         "activePosition": {
+//             "borrowRate": 1.38,
+//             "borrowAmount": 3,
+//             "borrowValue": 3,
+//             "collateralValue": 4.045,
+//             "collateralAmount": 25,
+//             "liquidationThreshold": 0.8,
+//             "healthFactor": 1.0786666666666667
+//         }
+//     }
+// ]
 
 export const handler: Schema["SendEmail"]["functionHandler"] = async (event) => {
 
     const { userId, walletAddress } = event.arguments
 
-    const agent: any = await setupAgent(TEST_PAYLOAD)
+    const payload = await getMarketData(walletAddress || "")
+
+    console.log("market data: ", payload)
+
+    const agent: any = await setupAgent()
 
     const output = await agent.invoke(
         {
             messages: [
                 {
                     role: 'user',
-                    content: `Please summarize the following JSON data into a clear and concise email format suitable for user notifications. \n${JSON.stringify(TEST_PAYLOAD)}`
+                    content: `Please summarize the following JSON data into a clear and concise email format suitable for user notifications. \n${JSON.stringify(payload)}`
                 }
             ]
         }
@@ -92,8 +99,8 @@ export const handler: Schema["SendEmail"]["functionHandler"] = async (event) => 
     console.log("content: ", content)
 
     const recipient = userId || "";
-    const subject = "Test Subject";
-    const body = "Hello this is a test email. Thanks.";
+    const subject = `Your Omneon Updates ${(new Date().toDateString())}`;
+    const body = content;
 
     const command = new SendEmailCommand({
         Source: "hello@omneon.xyz",
@@ -125,7 +132,7 @@ export const handler: Schema["SendEmail"]["functionHandler"] = async (event) => 
     }
 }
 
-const setupAgent = async (inputJson: any) => {
+const setupAgent = async () => {
 
     // Create React agent
     const agent = createReactAgent({
@@ -179,3 +186,206 @@ const parseLangchain = (messages: any) => {
     })
     return finalized
 }
+
+const getMarketData = async (walletAddress: string) => {
+
+    const rpcUrl = getFullnodeUrl('testnet');
+    const client = new IotaClient({ url: rpcUrl });
+
+    const { data } = await client.getObject({
+        id: "0x1b48d0219088beb4bace0f978c0b88ff84d88891ba5dc419aade04e40f4b3c87",
+        options: {
+            showType: false,
+            showOwner: false,
+            showPreviousTransaction: false,
+            showDisplay: false,
+            showContent: true,
+            showBcs: false,
+            showStorageRebate: false,
+        },
+    });
+
+    const content: any = data?.content;
+
+    if (!content) {
+        return []
+    }
+
+    const tableId = content.fields.pools.fields.id.id;
+    const dynamicFieldPage = await client.getDynamicFields({
+        parentId: tableId,
+    });
+
+    let count = 0;
+    let output = [];
+
+    for (let pool of dynamicFieldPage.data) {
+        const { objectId } = pool;
+        const result: any = await client.getObject({
+            id: objectId,
+            options: {
+                showType: false,
+                showOwner: false,
+                showPreviousTransaction: false,
+                showDisplay: false,
+                showContent: true,
+                showBcs: false,
+                showStorageRebate: false,
+            },
+        });
+        const fields = result.data.content.fields.value.fields;
+
+        let totalSupply = 0;
+        let totalBorrow = 0;
+
+        const currentPrice = Number(fields.current_price) / 10000;
+        const market =
+            fields.share_supply.type ===
+                "0x2::balance::Supply<0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::lending::SHARE<0x2::iota::IOTA, 0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::mock_vusd::MOCK_VUSD>>"
+                ? MARKETS[1]
+                : MARKETS[0];
+
+        if (market.id === 0) {
+            totalSupply = toUSD(
+                "VUSD",
+                Number(`${BigNumber(fields.total_supply).dividedBy(10 ** 9)}`),
+                currentPrice
+            );
+            totalBorrow = toUSD(
+                "VUSD",
+                Number(`${BigNumber(fields.total_borrows).dividedBy(10 ** 9)}`),
+                currentPrice
+            );
+        } else if (market.id === 1) {
+            totalSupply = toUSD(
+                "IOTA",
+                Number(`${BigNumber(fields.total_supply).dividedBy(10 ** 9)}`),
+                currentPrice
+            );
+            totalBorrow = toUSD(
+                "IOTA",
+                Number(`${BigNumber(fields.total_borrows).dividedBy(10 ** 9)}`),
+                currentPrice
+            );
+        }
+
+        const liquidity = totalSupply - totalBorrow;
+        const utilizationRatio =
+            totalSupply > 0 ? totalBorrow / totalSupply : 0;
+
+        let activePosition = undefined;
+
+        if (walletAddress) {
+            // add debt position
+            const tableId = fields.debt_positions.fields.id.id;
+            const dynamicFieldPage = await client.getDynamicFields({
+                parentId: tableId,
+            });
+            const thisPosition: any = dynamicFieldPage.data.find(
+                (item: any) => item.name.value === walletAddress
+            );
+
+            if (thisPosition) {
+                const userPosition: any = await client.getObject({
+                    id: thisPosition.objectId,
+                    options: {
+                        showType: false,
+                        showOwner: false,
+                        showPreviousTransaction: false,
+                        showDisplay: false,
+                        showContent: true,
+                        showBcs: false,
+                        showStorageRebate: false,
+                    },
+                });
+                const userFields = userPosition.data.content.fields.value.fields;
+
+                const collateralAmount = Number(
+                    `${BigNumber(userFields.collateral_amount).dividedBy(10 ** 9)}`
+                );
+                let collateralValue = 0;
+                let borrowValue = 0;
+                if (market.id === 0) {
+                    collateralValue = toUSD(
+                        "IOTA",
+                        Number(
+                            `${BigNumber(userFields.collateral_amount).dividedBy(
+                                10 ** 9
+                            )}`
+                        ),
+                        currentPrice
+                    );
+                    borrowValue = toUSD(
+                        "VUSD",
+                        Number(
+                            `${BigNumber(userFields.debt_amount).dividedBy(10 ** 9)}`
+                        ),
+                        currentPrice
+                    );
+                } else if (market.id === 1) {
+                    collateralValue = toUSD(
+                        "VUSD",
+                        Number(
+                            `${BigNumber(userFields.collateral_amount).dividedBy(
+                                10 ** 9
+                            )}`
+                        ),
+                        currentPrice
+                    );
+                    borrowValue = toUSD(
+                        "IOTA",
+                        Number(
+                            `${BigNumber(userFields.debt_amount).dividedBy(10 ** 9)}`
+                        ),
+                        currentPrice
+                    );
+                }
+                const borrowRate = Number(userFields.borrow_rate_snapshot) / 100;
+                const borrowAmount = Number(
+                    `${BigNumber(userFields.debt_amount).dividedBy(10 ** 9)}`
+                );
+                const liquidationThreshold =
+                    Number(userFields.liquidation_threshold_snapshot) / 10000;
+
+                const liquidationThresholdValue =
+                    collateralValue * liquidationThreshold;
+                const healthFactor = liquidationThresholdValue / borrowValue;
+
+                activePosition = {
+                    borrowRate,
+                    borrowAmount,
+                    borrowValue,
+                    collateralValue,
+                    collateralAmount,
+                    liquidationThreshold,
+                    healthFactor,
+                };
+
+            }
+        }
+
+        output.push({
+            marketName: market.marketName,
+            borrowAsset: market.borrow_asset,
+            collateralAsset: market.collateral_asset,
+            ltv: Number(fields.ltv) / 10000,
+            liquidationThreshold: Number(fields.liquidation_threshold) / 10000,
+            borrowRate: Number(fields.current_borrow_rate) / 100,
+            supplyRate: Number(fields.current_supply_rate) / 100,
+            totalSupply,
+            totalBorrow,
+            liquidity,
+            utilizationRate: utilizationRatio * 100,
+            currentPrice,
+            activePosition,
+        });
+
+        count = count + 1;
+    }
+
+    return output;
+}
+
+const toUSD = (symbol: string, amount: number, currentPrice: number = 0.16): number => {
+    return amount * ( symbol === "IOTA" ? currentPrice : 1 )
+  };

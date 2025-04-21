@@ -16,7 +16,12 @@
     },
     {
         "name" : "SHARE-IOTA",
-        "image" : "./images/vusd-icon.png",
+        "image" : "./images/iota-icon.png",
         "coin_type" : "0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::lending::SHARE<0x2::iota::IOTA,0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::mock_vusd::MOCK_VUSD>"
+    },
+    {
+        "name" : "OMNEON",
+        "image" : "./images/iota-icon.png",
+        "coin_type" : "0x05b4c48658ea6aa63c9e847f6421cf7e903f9ae58eb5233597e460ad869fda7f::omneon::OMNEON"
     }
 ]

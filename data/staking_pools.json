@@ -1,0 +1,18 @@
+[ 
+    {
+        "id" : 0,
+        "name" : "VUSD",
+        "symbol" : "Share vUSD",
+        "image" : "./images/vusd-icon.png",
+        "coin_type" : "0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::lending::SHARE<0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::mock_vusd::MOCK_VUSD,0x2::iota::IOTA>",
+        "emission_rate" : 0.01
+    },
+    {
+        "id" : 1,
+        "name" : "IOTA",
+        "symbol" : "Share IOTA",
+        "image" : "./images/iota-icon.png",
+        "coin_type" : "0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::lending::SHARE<0x2::iota::IOTA,0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::mock_vusd::MOCK_VUSD>",
+        "emission_rate" : 0.02
+    }
+]

@@ -1,6 +1,52 @@
 ## Omneon.XYZ
 
-TBD
+Omneon is a decentralized lending protocol on IOTA Rebased that integrates AI-personalized intelligence. Users can supply or borrow assets with interest rates that adjust dynamically based on pool utilization. Real-time price feeds are secured by Pyth Oracle, while having AI-agents provide personalized insights, sending email updates and alerts when loan or collateral positions require attention.
+
+By leveraging the power of AI, we enhance a lending platform that is more efficient and secure while maintaining a high degree of decentralization over user funds.
+
+- [YouTube](https://youtu.be/DL0BbF2az9U)
+- [Dapp](https://omneon.xyz)
+
+## Highlighted Features
+- Live on IOTA Rebased Testnet. Currently supports lending pools for **IOTA** and **vUSD** assets.  
+  - IOTA requires vUSD as collateral  
+  - vUSD requires IOTA as collateral
+
+- Utilizes a dual-slope interest rate model based on pool utilization:  
+  - Low utilization → stable, low rates  
+  - High utilization → exponentially increasing rates
+
+- Uses **Pyth Oracle** for real-time, on-chain price feeds used in Loan Health and LTV calculations.
+
+- Uses **Claude AI** to interpret on-chain data into personalized, human-readable recommendations.  
+  - Users can subscribe via email and link their wallet  
+  - Loan health and LTV updates are sent in near real-time
+
+## System Overview
+
+The project follows the **AWS Amplify** stack for full-stack development as code.  It uses **Next.js** for the frontend and **AWS Lambda** functions for backend processing. Smart contracts are located seperately in the `/contracts` folder.
+
+### The system consists of 3 main subsystems:
+
+1. **AI Notifications**  
+   - Fetches on-chain data using the **IOTA TypeScript SDK**  
+   - Uses **LangChain LangGraph** to prepare prompts for **Claude AI**  
+   - Claude interprets the data into readable recommendations  
+   - Sends emails via **AWS SES** to subscribed users
+
+2. **Lending System**  
+   - Built with **IOTA Move** smart contracts  
+   - Supports a lending pool that issues share tokens when assets are supplied  
+   - Share token value increases over time from accrued interest  
+   - Borrowers must repay loans with interest
+
+3. **Staking System**  
+   - Also built with **IOTA Move**  
+   - Implements the **Omneon Token** with a staking mechanism  
+   - Token has a max supply of **1 billion**  
+   - On mint:  
+     - **50%** goes to staking pool automatically
+     - **50%** goes to the treasury for community airdrops, team allocation, and future initiatives
 
 ## Deployment
 

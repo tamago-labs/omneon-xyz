@@ -282,7 +282,7 @@ const StakingContainer = () => {
                   />
                   <button
                     onClick={() => {
-                      const max = (balances && balances[selectedAsset.id + 2]) ? Number(balances[selectedAsset.id + 2]).toLocaleString() : "0"
+                      const max: any = (balances && balances[selectedAsset.id + 2]) ? `${Number(balances[selectedAsset.id + 2])}` : "0"
                       setStakeAmount(max)
                     }}
                     className="absolute right-2 top-2 bg-blue-700 px-2 py-1 rounded text-sm"

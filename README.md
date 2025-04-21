@@ -1,6 +1,6 @@
 ## Omneon.XYZ
 
-Omneon is a decentralized lending protocol on IOTA Rebased that integrates AI-personalized intelligence. Users can supply or borrow assets with interest rates that adjust dynamically based on pool utilization. Real-time price feeds are secured by Pyth Oracle, while having AI-agents provide personalized insights, sending email updates and alerts when loan or collateral positions require attention.
+**Omneon** is a decentralized lending protocol on **IOTA Rebased** that integrates AI-personalized intelligence. Users can supply or borrow assets with interest rates that adjust dynamically based on pool utilization. Real-time price feeds are secured by **Pyth Oracle**, while having AI-agents provide personalized insights, sending email updates and alerts when loan or collateral positions require attention.
 
 By leveraging the power of AI, we enhance a lending platform that is more efficient and secure while maintaining a high degree of decentralization over user funds.
 

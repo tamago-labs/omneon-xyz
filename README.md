@@ -172,9 +172,7 @@ For the smart contract, navigate to `/contracts/omneon` and run test cases with:
 iota move test
 ```
 
-Refer to the documentation for deploying a new contract on the live network and updating the JSON file in the project accordingly.
-
-For detailed instructions on deploying to AWS cloud, refer to the [deployment section](https://docs.amplify.aws/nextjs/start/quickstart/nextjs-app-router-client-components/#deploy-a-fullstack-app-to-aws).
+Refer to the documentation for deploying a new contract on the live network and updating the JSON file in the project accordingly. 
 
 ## Deployment
 

@@ -9,18 +9,13 @@ By leveraging the power of AI, we enhance a lending platform that is more effici
 
 ## Highlighted Features
 - Live on IOTA Rebased Testnet. Currently supports lending pools for **IOTA** and **vUSD** assets.  
-  - IOTA requires vUSD as collateral  
-  - vUSD requires IOTA as collateral
-
 - Utilizes a dual-slope interest rate model based on pool utilization:  
   - Low utilization → stable, low rates  
   - High utilization → exponentially increasing rates
 
 - Uses **Pyth Oracle** for real-time, on-chain price feeds used in Loan Health and LTV calculations.
 
-- Uses **Claude AI** to interpret on-chain data into personalized, human-readable recommendations.  
-  - Users can subscribe via email and link their wallet  
-  - Loan health and LTV updates are sent in near real-time
+- Uses **Claude AI** to interpret on-chain data into personalized, human-readable recommendations.
 
 ## System Overview
 

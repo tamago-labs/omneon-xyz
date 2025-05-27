@@ -47,7 +47,7 @@ const CTASection = () => {
               </p>
             </a>
              <a
-              href="https://docs.omneon.xyz"
+              href="https://docs-v1.omneon.xyz"
               target="_blank"
               rel="noopener noreferrer"
               className="bg-white/5 backdrop-blur-sm border border-white/10   rounded-xl p-6 text-center transform hover:scale-105 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/20"

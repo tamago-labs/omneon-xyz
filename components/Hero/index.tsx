@@ -69,7 +69,7 @@ const Hero = () => {
                                 Get Started
                             </button>
                         </Link>
-                        <Link href="https://docs.omneon.xyz" target="_blank">
+                        <Link href="https://docs-v1.omneon.xyz" target="_blank">
                             <button className="px-8 py-3 rounded-full border cursor-pointer border-purple-500 text-white font-medium hover:bg-purple-500/10 transition-all">
                                 Learn More
                             </button>

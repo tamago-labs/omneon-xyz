@@ -7,8 +7,8 @@ import {
 import { useCallback } from "react";
 import BigNumber from "bignumber.js";
 import COINS from "../data/coins.json";
-import POOLS from "../data/staking_pools.json"; 
-import {usePrice} from "./usePrice"
+import POOLS from "../data/staking_pools.json";
+import { usePrice } from "./usePrice"
 
 const useStaking = () => {
 
@@ -39,27 +39,27 @@ const useStaking = () => {
   };
 
   // Function to calculate APY for staking pools
-const calculateAPY = (emissionRate: number, assetPrice: number) => {
-  // emissionRate: tokens per second per staked token (scaled down by 10000)
-  // tokenPrice: price of OMN token in USD
-  // assetPrice: price of the staked asset in USD
-  // totalStaked: total amount of assets staked in the pool
-  
-  // Scale down emission rate (we scaled it up by 10000 in contract)
-  const actualEmissionRate = emissionRate
-  
-  // Calculate tokens earned per token per year
-  const secondsInYear = 365 * 24 * 60 * 60; // 31,536,000
-  const tokensPerYearPerToken = actualEmissionRate * secondsInYear;
-  
-  // Calculate USD value of rewards per year per USD staked
-  const rewardsValuePerYear = tokensPerYearPerToken * 0.00015;
-  
-  // Calculate APY as percentage
-  const apy = (rewardsValuePerYear / assetPrice) * 100;
-  
-  return apy.toFixed(2); // Return with 2 decimal places
-}
+  const calculateAPY = (emissionRate: number, assetPrice: number) => {
+    // emissionRate: tokens per second per staked token (scaled down by 10000)
+    // tokenPrice: price of OMN token in USD
+    // assetPrice: price of the staked asset in USD
+    // totalStaked: total amount of assets staked in the pool
+
+    // Scale down emission rate (we scaled it up by 10000 in contract)
+    const actualEmissionRate = emissionRate
+
+    // Calculate tokens earned per token per year
+    const secondsInYear = 365 * 24 * 60 * 60; // 31,536,000
+    const tokensPerYearPerToken = actualEmissionRate * secondsInYear;
+
+    // Calculate USD value of rewards per year per USD staked
+    const rewardsValuePerYear = tokensPerYearPerToken * 0.00015;
+
+    // Calculate APY as percentage
+    const apy = (rewardsValuePerYear / assetPrice) * 100;
+
+    return apy.toFixed(2); // Return with 2 decimal places
+  }
 
   const loadPools = useCallback(
     async () => {
@@ -88,7 +88,7 @@ const calculateAPY = (emissionRate: number, assetPrice: number) => {
         parentId: tableId,
       });
 
-      let output = [] 
+      let output = []
       let count = 0;
 
       for (let entry of dynamicFieldPage.data) {
@@ -105,16 +105,13 @@ const calculateAPY = (emissionRate: number, assetPrice: number) => {
             showStorageRebate: false,
           },
         });
-        const value = result.data.content.fields.value; 
+        const value = result.data.content.fields.value;
         const pool = POOLS[count]
 
         const totalStaked = `${BigNumber(value).dividedBy(10 ** 9)}`
-        const totalStakedValue = toUSD(pool.id === 0 ? "VUSD" : "IOTA", Number(totalStaked) )
-        console.log("totalStakedValue:", totalStakedValue)
+        const totalStakedValue = toUSD(pool.id === 0 ? "VUSD" : "IOTA", Number(totalStaked))
 
         const apy = calculateAPY(pool.emission_rate, totalStakedValue)
-
-        console.log("apy: ", apy)
 
         output.push({
           ...pool,
@@ -136,8 +133,6 @@ const calculateAPY = (emissionRate: number, assetPrice: number) => {
     if (!currentAccount) {
       return;
     }
-
-    console.log("amount / asset type :", amount, asset_type)
 
     const tx = new Transaction();
     tx.setGasBudget(50000000);
@@ -206,13 +201,120 @@ const calculateAPY = (emissionRate: number, assetPrice: number) => {
       return undefined;
     }
 
+  }, [currentAccount])
 
+  const loadPositions = useCallback(async (staker_address: string) => {
+
+    const { data } = await client.getOwnedObjects({
+      owner: staker_address,
+      options: {
+        showType: true
+      },
+      filter: {
+        MatchAny: [
+          {
+            StructType: "0x05b4c48658ea6aa63c9e847f6421cf7e903f9ae58eb5233597e460ad869fda7f::omneon::StakingPosition<0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::lending::SHARE<0x2::iota::IOTA, 0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::mock_vusd::MOCK_VUSD>>"
+          },
+          {
+            StructType: "0x05b4c48658ea6aa63c9e847f6421cf7e903f9ae58eb5233597e460ad869fda7f::omneon::StakingPosition<0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::lending::SHARE<0x0c0b0216de041640f43657028dffd70f35f6528623d6751a190d282c05253c64::mock_vusd::MOCK_VUSD, 0x2::iota::IOTA>>"
+          }
+        ],
+      }
+    })
+
+    let output: any = []
+
+    for (let position of data) {
+      if (position.data) {
+        const result: any = await client.getObject({
+          id: position.data.objectId,
+          options: {
+            showType: false,
+            showOwner: false,
+            showPreviousTransaction: false,
+            showDisplay: false,
+            showContent: true,
+            showBcs: false,
+            showStorageRebate: false,
+          },
+        });
+        const totalStaked = `${BigNumber(result.data.content.fields.share_coin).dividedBy(10 ** 9)}`
+        const totalPaid = 0 // Fix this
+
+        const totalRewards = calculateRewards(0.01, totalPaid, Number(totalStaked))
+
+        output.push({
+          objectId: result.data.objectId,
+          type: result.data.content.type,
+          totalStaked,
+          totalRewards
+        })
+      }
+
+    }
+
+    return output
+
+  }, [])
+
+  const unstake = useCallback(async (asset_type: string, positionId: string) => {
+
+    const tx = new Transaction();
+    tx.setGasBudget(50000000);
+
+    tx.moveCall({
+      target: `0x05b4c48658ea6aa63c9e847f6421cf7e903f9ae58eb5233597e460ad869fda7f::omneon::unstake`,
+      typeArguments: [asset_type],
+      arguments: [
+        tx.object(
+          "0x9cc7f40a3375a4dee8a6a95b99dace6c50564910b2c607c66d9241ced461946c"
+        ),
+        tx.object(positionId),
+        tx.object("0x6"),
+      ],
+    });
+
+    const params = {
+      transaction: tx,
+    };
+    return await signWallet(params);
 
   }, [currentAccount])
 
+  const claim = useCallback(async (asset_type: string, positionId: string) => {
+
+    const tx = new Transaction();
+    tx.setGasBudget(50000000);
+
+    tx.moveCall({
+      target: `0x05b4c48658ea6aa63c9e847f6421cf7e903f9ae58eb5233597e460ad869fda7f::omneon::claim`,
+      typeArguments: [asset_type],
+      arguments: [
+        tx.object(
+          "0x9cc7f40a3375a4dee8a6a95b99dace6c50564910b2c607c66d9241ced461946c"
+        ),
+        tx.object(positionId),
+        tx.object("0x6"),
+      ],
+    });
+
+    const params = {
+      transaction: tx,
+    };
+    return await signWallet(params);
+  }, [currentAccount])
+
+  const calculateRewards = (ratePerToken: number, totalPaid: number, totalStaked: number) => {
+    const delta = ratePerToken - totalPaid
+    return totalStaked * delta
+  }
+
   return {
     loadPools,
-    stake
+    loadPositions,
+    stake,
+    claim,
+    unstake
   }
 }
 

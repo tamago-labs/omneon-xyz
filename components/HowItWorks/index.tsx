@@ -23,26 +23,31 @@ const HowItWorks = () => {
                                 <h3 className="text-xl font-bold text-white mb-2">Deposit Assets</h3>
                                 <p className="text-gray-300">Supply your crypto assets to the protocol and start earning interest instantly.</p>
                             </li>
-                            <li className="mb-10 ml-6">
+                           {/* <li className="mb-10 ml-6">
                                 <span className="absolute flex items-center justify-center w-8 h-8 rounded-full -left-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white">2</span>
                                 <h3 className="text-xl font-bold text-white mb-2">Link Your Email</h3>
                                 <p className="text-gray-300">Receive essential updates and personalized reports powered by AI.</p>
-                            </li>
+                            </li>*/}
                             <li className="mb-10 ml-6">
                                 <span className="absolute flex items-center justify-center w-8 h-8 rounded-full -left-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white">3</span>
                                 <h3 className="text-xl font-bold text-white mb-2">Borrow Assets</h3>
-                                <p className="text-gray-300">Borrow from the protocol with adaptive interest rates based on pool utilization.</p>
+                                <p className="text-gray-300">Anyone can then borrow with adaptive interest rates based on pool utilization.</p>
                             </li>
                             <li className="mb-10 ml-6">
+                                <span className="absolute flex items-center justify-center w-8 h-8 rounded-full -left-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white">3</span>
+                                <h3 className="text-xl font-bold text-white mb-2">Link Your Email</h3>
+                                <p className="text-gray-300">Let AI monitor liquidation risks and alert you before your health factor gets critical.</p>
+                            </li>
+                          {/*  <li className="mb-10 ml-6">
                                 <span className="absolute flex items-center justify-center w-8 h-8 rounded-full -left-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white">4</span>
                                 <h3 className="text-xl font-bold text-white mb-2">Stay Protected</h3>
                                 <p className="text-gray-300">Let AI monitor liquidation risks and alert you before your health factor gets critical.</p>
-                            </li>
+                            </li>*/}
 
                         </ol>
                     </div>
 
-                    <div className="relative"> 
+                    <div className="relative mt-[90px] md:mt-0"> 
                         {/* Floating UI elements */}
                         <motion.div
                             className="absolute top-6 left-1/2 -translate-x-1/2 w-40 h-16 rounded-lg bg-white/5 backdrop-blur-sm border p-3 border-white/10 "

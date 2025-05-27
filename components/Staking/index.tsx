@@ -11,6 +11,7 @@ import {
   TrendingUp,
   Calendar,
   AlertCircle,
+  Gift
 } from "lucide-react";
 import { Puff } from 'react-loading-icons'
 import { useCurrentAccount } from '@iota/dapp-kit';
@@ -21,9 +22,9 @@ import { RefreshCw } from 'react-feather';
 
 const StakingContainer = () => {
 
-  const { loadPools, stake } = useStaking()
+  const { loadPools, stake, loadPositions, unstake, claim } = useStaking()
   const [assets, setAssets] = useState<any>([]);
-
+  const [positions, setPositions] = useState<any>([])
 
   const { fetchBalances } = useLending()
 
@@ -36,17 +37,21 @@ const StakingContainer = () => {
       balances: undefined,
       tick: 1,
       errorMessage: undefined,
-      loading: false
+      loading: false,
+      unstakeLoading: false,
+      claimLoading: false,
+      actionType: null // 'stake', 'unstake', 'claim'
     }
   )
 
-  const { balances, tick, errorMessage, loading } = values
+  const { balances, tick, errorMessage, loading, unstakeLoading, claimLoading, actionType } = values
 
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
+  const [selectedPosition, setSelectedPosition] = useState<any>(null);
   const [isStakeModalOpen, setIsStakeModalOpen] = useState(false);
-  // const [isUnstakeModalOpen, setIsUnstakeModalOpen] = useState(false);
+  const [isUnstakeModalOpen, setIsUnstakeModalOpen] = useState(false);
+  const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
   const [stakeAmount, setStakeAmount] = useState("");
-  // const [unstakeAmount, setUnstakeAmount] = useState("");
 
   useEffect(() => {
     address && fetchBalances(address).then(
@@ -62,6 +67,12 @@ const StakingContainer = () => {
     loadPools().then(setAssets)
   }, [tick])
 
+  console.log("assets:", assets)
+
+  useEffect(() => {
+    address && loadPositions(address).then(setPositions)
+  }, [tick, address])
+
   const increaseTick = useCallback(() => {
     dispatch({
       tick: tick + 1
@@ -75,22 +86,35 @@ const StakingContainer = () => {
     setIsStakeModalOpen(true);
   };
 
-  // const openUnstakeModal = (asset: any) => {
-  //   setSelectedAsset(asset);
-  //   setUnstakeAmount("");
-  //   setIsUnstakeModalOpen(true);
-  // };
+  const openUnstakeModal = (asset: any, position: any) => {
+    setSelectedAsset(asset);
+    setSelectedPosition(position);
+    setIsUnstakeModalOpen(true);
+  };
+
+  const openClaimModal = (asset: any, position: any) => {
+    setSelectedAsset(asset);
+    setSelectedPosition(position);
+    setIsClaimModalOpen(true);
+  };
 
   const closeModals = () => {
     setIsStakeModalOpen(false);
-    // setIsUnstakeModalOpen(false);
+    setIsUnstakeModalOpen(false);
+    setIsClaimModalOpen(false);
     setSelectedAsset(null);
+    setSelectedPosition(null);
+    dispatch({ 
+      errorMessage: undefined,
+      actionType: null,
+      loading: false,
+      unstakeLoading: false,
+      claimLoading: false
+    });
   };
- 
 
   const onStake = useCallback(async () => {
-
-    dispatch({ errorMessage: undefined })
+    dispatch({ errorMessage: undefined, actionType: 'stake' })
 
     if (0.1 > Number(stakeAmount)) {
       dispatch({ errorMessage: "Minimum amount is 0.1" })
@@ -99,7 +123,6 @@ const StakingContainer = () => {
 
     dispatch({ loading: true })
     try {
-
       const txId = await stake(Number(stakeAmount), selectedAsset.coin_type)
 
       dispatch({ loading: false })
@@ -118,21 +141,63 @@ const StakingContainer = () => {
       dispatch({ loading: false })
       dispatch({ errorMessage: error.message })
     }
-
   }, [stake, stakeAmount, selectedAsset])
 
-  const handleMaxStake = () => {
-    if (selectedAsset) {
-      setStakeAmount(selectedAsset.balance);
-    }
-  };
+  const onUnstake = useCallback(async () => {
+    dispatch({ errorMessage: undefined, actionType: 'unstake' })
+    dispatch({ unstakeLoading: true })
+    
+    try {
+      const txId = await unstake(selectedAsset.coin_type, selectedPosition.objectId)
 
-  console.log("assets: ", assets)
+      dispatch({ unstakeLoading: false })
+
+      if (txId) {
+        closeModals()
+        setTimeout(() => {
+          increaseTick()
+        }, 2000)
+      } else {
+        throw new Error("Unknown error. Possibly rejection.")
+      }
+
+    } catch (error: any) {
+      console.log(error)
+      dispatch({ unstakeLoading: false })
+      dispatch({ errorMessage: error.message })
+    }
+  }, [unstake, selectedAsset, selectedPosition])
+
+  const onClaim = useCallback(async () => {
+    dispatch({ errorMessage: undefined, actionType: 'claim' })
+    dispatch({ claimLoading: true })
+    
+    try {
+      const txId = await claim(selectedAsset.coin_type, selectedPosition.objectId)
+
+      dispatch({ claimLoading: false })
+
+      if (txId) {
+        closeModals()
+        setTimeout(() => {
+          increaseTick()
+        }, 2000)
+      } else {
+        throw new Error("Unknown error. Possibly rejection.")
+      }
+
+    } catch (error: any) {
+      console.log(error)
+      dispatch({ claimLoading: false })
+      dispatch({ errorMessage: error.message })
+    }
+  }, [claim, selectedAsset, selectedPosition])
+ 
 
   let totalStakedValue = 0
 
-  assets.map((item:any) => {
-    totalStakedValue = totalStakedValue+Number(item.totalStakedValue)
+  assets.map((item: any) => {
+    totalStakedValue = totalStakedValue + Number(item.totalStakedValue)
   })
 
   return (
@@ -167,7 +232,7 @@ const StakingContainer = () => {
             <h2 className="text-2xl font-bold">$0.00015</h2>
           </div>
           <div className="text-center">
-            <p className="text-blue-300 mb-1">OMN Supply</p>
+            <p className="text-blue-300 mb-1">OMN In Circulation</p>
             <h2 className="text-2xl font-bold">10M OMN</h2>
           </div>
         </motion.div>
@@ -175,16 +240,17 @@ const StakingContainer = () => {
 
       {/* Staking Pools */}
       <div className="max-w-4xl mx-auto">
-        {/* <h2 className="text-2xl font-bold mb-6">Your Staking Positions</h2> */}
-
         <div className="space-y-4">
           {assets.length === 0 && (
             <div className="px-6 py-8   text-gray-400">
               <RefreshCw className=' text-white animate-spin' size={20} />
             </div>
           )}
-          {assets.map((asset: any, index: number) => (
-            <motion.div
+          {assets.map((asset: any, index: number) => {
+
+            const position = positions.length > 0 ? findStakingByType(positions, asset.coin_type) : undefined
+
+            return (<motion.div
               key={asset.symbol}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -203,28 +269,38 @@ const StakingContainer = () => {
                 </div>
 
                 {/* Asset Details */}
-                <div className="grid grid-cols-2 gap-8 text-right">
+                <div className="  gap-4 grid grid-cols-3 flex-grow text-right">
                   <div>
-                    <p className="text-blue-300 text-sm">Available</p>
+                    <p className="text-blue-300 text-sm">Available to Stake</p>
                     <p className="font-medium">
                       {(balances && balances[index + 2]) ? Number(balances[index + 2]).toLocaleString() : 0} {asset.symbol}
                     </p>
                   </div>
                   <div>
-                    <p className="text-blue-300 text-sm">Staked</p>
+                    <p className="text-blue-300 text-sm">Your Staked</p>
                     <p className="font-medium">
-                      {asset.totalStaked} {asset.symbol}
+                      {position ? Number(position.totalStaked).toLocaleString() : 0} {asset.symbol}
                     </p>
                   </div>
-                 {/* <div>
+                  <div>
                     <p className="text-blue-300 text-sm">Earned</p>
-                    <p className="font-medium">0 OMN</p>
-                  </div>*/}
+                    <p className="font-medium">
+                      {position ? Number(position.totalRewards).toLocaleString() : 0} OMN
+                    </p>
+                  </div>
+
                 </div>
               </div>
 
               {/* Action Buttons */}
               <div className="mt-6 flex justify-end space-x-3">
+
+                <div className="mr-auto ml-0 flex">
+                  <div className="mt-auto">
+                    <p className="text-blue-300 text-sm">Pool Staked: {asset.totalStaked} {asset.symbol}</p>
+
+                  </div>
+                </div>
 
                 <button
                   onClick={() => openStakeModal(asset)}
@@ -232,21 +308,28 @@ const StakingContainer = () => {
                 >
                   Stake
                 </button>
-                <button
-                  // onClick={() => openUnstakeModal(asset)}
-                  className="px-4 py-2 bg-blue-700 rounded-lg hover:bg-blue-600 transition-all"
-                >
-                  Unstake
-                </button>
-                {/* <button
-                  onClick={() => handleClaim(asset)}
-                  className="px-4 py-2 bg-gradient-to-r from-green-500 to-teal-500 rounded-lg hover:from-green-600 hover:to-teal-600 transition-all"
-                >
-                  Claim
-                </button>*/}
+                
+                {position && (
+                  <>
+                    <button
+                      onClick={() => openClaimModal(asset, position)}
+                      disabled={!position || Number(position.totalRewards) === 0}
+                      className="px-4 py-2 bg-gradient-to-r from-green-500 to-teal-500 rounded-lg hover:from-green-600 hover:to-teal-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Claim
+                    </button>
+                    
+                    <button
+                      onClick={() => openUnstakeModal(asset, position)}
+                      className="px-4 py-2 bg-blue-700 rounded-lg hover:bg-blue-600 transition-all"
+                    >
+                      Unstake
+                    </button>
+                  </>
+                )}
               </div>
-            </motion.div>
-          ))}
+            </motion.div>)
+          })}
         </div>
       </div>
 
@@ -294,19 +377,20 @@ const StakingContainer = () => {
               <div className="flex space-x-3">
                 <button
                   onClick={onStake}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all"
-                > 
+                  disabled={loading}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   {loading
-                                ?
-                                <Puff
-                                    stroke="#fff"
-                                    className="w-5 h-5 mx-auto"
-                                />
-                                :
-                                <>
-                                    Confirm Stake
-                                </>
-                            }
+                    ?
+                    <Puff
+                      stroke="#fff"
+                      className="w-5 h-5 mx-auto"
+                    />
+                    :
+                    <>
+                      Confirm Stake
+                    </>
+                  }
                 </button>
                 <button
                   onClick={closeModals}
@@ -315,7 +399,143 @@ const StakingContainer = () => {
                   Cancel
                 </button>
               </div>
-              {errorMessage && (
+              {errorMessage && actionType === 'stake' && (
+                <p className="text-sm text-center mt-2 text-secondary">
+                  {errorMessage}
+                </p>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Unstake Modal */}
+      <AnimatePresence>
+        {isUnstakeModalOpen && selectedAsset && selectedPosition && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-blue-900 rounded-xl p-6 max-w-md w-full"
+            >
+              <div className="flex items-center mb-4">
+                <UnlockIcon className="text-blue-400 mr-2" size={24} />
+                <h3 className="text-2xl font-bold">
+                  Unstake All {selectedAsset.symbol}
+                </h3>
+              </div>
+              
+              <div className="mb-6 bg-blue-800 bg-opacity-30 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-blue-300">Staked Amount:</span>
+                  <span className="text-white font-bold">{Number(selectedPosition.totalStaked).toLocaleString()} {selectedAsset.symbol}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-blue-300">Pending Rewards:</span>
+                  <span className="text-green-400 font-bold">{Number(selectedPosition.totalRewards).toLocaleString()} OMN</span>
+                </div>
+                <div className="border-t border-blue-600 pt-2 mt-2">
+                  <p className="text-blue-200 text-sm">
+                    This will unstake all your tokens and claim all pending rewards.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={onUnstake}
+                  disabled={unstakeLoading}
+                  className="flex-1 px-4 py-3 bg-blue-700 rounded-lg hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {unstakeLoading ? (
+                    <Puff stroke="#fff" className="w-5 h-5 mx-auto" />
+                  ) : (
+                    'Confirm Unstake'
+                  )}
+                </button>
+                <button
+                  onClick={closeModals}
+                  className="flex-1 px-4 py-3 bg-blue-800 rounded-lg hover:bg-blue-700 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+              
+              {errorMessage && actionType === 'unstake' && (
+                <p className="text-sm text-center mt-2 text-secondary">
+                  {errorMessage}
+                </p>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Claim Modal */}
+      <AnimatePresence>
+        {isClaimModalOpen && selectedAsset && selectedPosition && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-blue-900 rounded-xl p-6 max-w-md w-full"
+            >
+              <div className="flex items-center mb-4">
+                <Gift className="text-green-400 mr-2" size={24} />
+                <h3 className="text-2xl font-bold">
+                  Claim Rewards
+                </h3>
+              </div>
+              
+              <div className="mb-6 bg-blue-800 bg-opacity-30 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-blue-300">Pending Rewards:</span>
+                  <span className="text-green-400 font-bold text-xl">{Number(selectedPosition.totalRewards).toLocaleString()} OMN</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-blue-300">USD Value:</span>
+                  <span className="text-white font-bold">${(Number(selectedPosition.totalRewards) * 0.00015).toFixed(4)}</span>
+                </div>
+                <div className="border-t border-blue-600 pt-2 mt-2">
+                  <p className="text-blue-200 text-sm">
+                    This will claim your rewards without unstaking your tokens.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={onClaim}
+                  disabled={claimLoading || Number(selectedPosition.totalRewards) === 0}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-teal-500 rounded-lg hover:from-green-600 hover:to-teal-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {claimLoading ? (
+                    <Puff stroke="#fff" className="w-5 h-5 mx-auto" />
+                  ) : (
+                    'Claim Rewards'
+                  )}
+                </button>
+                <button
+                  onClick={closeModals}
+                  className="flex-1 px-4 py-3 bg-blue-800 rounded-lg hover:bg-blue-700 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+              
+              {errorMessage && actionType === 'claim' && (
                 <p className="text-sm text-center mt-2 text-secondary">
                   {errorMessage}
                 </p>
@@ -329,5 +549,19 @@ const StakingContainer = () => {
   );
 };
 
+function findStakingByType(data: any, input: string) {
+  // Normalize x by removing all spaces
+  const xNormalized = input.replace(/\s+/g, '');
+
+
+  for (const item of data) {
+    // Match the inner type inside StakingPosition<>
+    const match = item.type.replace(/\s+/g, '').match(/StakingPosition<(.+)>/);
+    if (match && match[1] === xNormalized) {
+      return item;
+    }
+  }
+  return null;
+}
 
 export default StakingContainer;
